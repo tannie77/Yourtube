@@ -41,7 +41,7 @@ export default function LibraryPage() {
   }, [searchQuery, videos]);
 
   return (
-    <main className="min-h-screen bg-[#f7f8fb] text-[#172033]">
+    <main className="min-h-screen bg-[#f7f8fb] dark:bg-[#101624] text-[#172033] dark:text-[#e6ecf7]">
       <div className="mx-auto max-w-[1510px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
         <section className="relative overflow-hidden rounded-[28px] bg-[#171b30] px-7 py-9 text-white sm:px-10 sm:py-11" style={{ backgroundImage: "radial-gradient(circle at 82% 10%, rgba(235,123,115,.24), transparent 33%), radial-gradient(circle at 54% 120%, rgba(113,88,172,.3), transparent 55%)" }}>
           <div className="pointer-events-none absolute -right-16 -top-48 hidden size-[500px] rounded-full border border-white/10 shadow-[0_0_0_54px_rgba(255,255,255,.035),0_0_0_108px_rgba(255,255,255,.02)] lg:block" aria-hidden="true" />
@@ -60,26 +60,26 @@ export default function LibraryPage() {
         <section className="pb-14 pt-8" aria-labelledby="all-videos-heading" aria-live="polite">
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#e16b55]">Watch and discover</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#e16b55] dark:text-[#ff9b87]">Watch and discover</p>
               <h2 id="all-videos-heading" className="mt-1 text-2xl font-semibold tracking-[-0.05em]">All videos</h2>
             </div>
-            {libraryState === "ready" && videos.length > 0 && <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-[#7b8494]">{matchingVideos.length} {matchingVideos.length === 1 ? "video" : "videos"}</span>}
+            {libraryState === "ready" && videos.length > 0 && <span className="rounded-full bg-white dark:bg-[#202a3d] px-3 py-1.5 text-xs font-semibold text-[#7b8494] dark:text-[#aab5c8]">{matchingVideos.length} {matchingVideos.length === 1 ? "video" : "videos"}</span>}
           </div>
 
-          {libraryState === "loading" && <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3" aria-label="Loading videos">{[0, 1, 2].map((item) => <div key={item} className="h-64 animate-pulse rounded-2xl bg-[#e8ebf0]" />)}</div>}
+          {libraryState === "loading" && <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3" aria-label="Loading videos">{[0, 1, 2].map((item) => <div key={item} className="h-64 animate-pulse rounded-2xl bg-[#e8ebf0] dark:bg-[#2b374b]" />)}</div>}
 
-          {libraryState === "error" && <div className="rounded-3xl border border-[#f3d5cf] bg-[#fff7f4] px-6 py-12 text-center"><h3 className="text-lg font-semibold text-[#7a3b31]">Could not load the local library</h3><p className="mt-2 text-sm text-[#a56b60]">Check that the local API is running, then try again.</p><button type="button" className="mt-5 rounded-xl bg-[#ed6049] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#dc523c]" onClick={() => { setLibraryState("loading"); setRefreshKey((value) => value + 1); }}>Retry</button></div>}
+          {libraryState === "error" && <div className="rounded-3xl border border-[#f3d5cf] dark:border-[#73505a] bg-[#fff7f4] dark:bg-[#43313a] px-6 py-12 text-center"><h3 className="text-lg font-semibold text-[#7a3b31] dark:text-[#ff9b87]">Could not load the local library</h3><p className="mt-2 text-sm text-[#a56b60] dark:text-[#ff9b87]">Check that the local API is running, then try again.</p><button type="button" className="mt-5 rounded-xl bg-[#ed6049] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#dc523c]" onClick={() => { setLibraryState("loading"); setRefreshKey((value) => value + 1); }}>Retry</button></div>}
 
           {libraryState === "ready" && videos.length === 0 && (
-            <div className="flex flex-col items-center rounded-[28px] border border-[#e8ebf0] bg-white px-6 py-12 text-center shadow-[0_10px_30px_rgba(24,33,55,0.025)] sm:py-14">
-              <span className="flex size-20 items-center justify-center rounded-[24px] bg-[#fff0ec] text-[#e56a51]"><Clapperboard className="size-10" strokeWidth={1.5} aria-hidden="true" /></span>
+            <div className="flex flex-col items-center rounded-[28px] border border-[#e8ebf0] dark:border-[#3b465f] bg-white dark:bg-[#202a3d] px-6 py-12 text-center shadow-[0_10px_30px_rgba(24,33,55,0.025)] sm:py-14">
+              <span className="flex size-20 items-center justify-center rounded-[24px] bg-[#fff0ec] dark:bg-[#43313a] text-[#e56a51] dark:text-[#ff9b87]"><Clapperboard className="size-10" strokeWidth={1.5} aria-hidden="true" /></span>
               <h3 className="mt-7 text-xl font-semibold tracking-[-0.045em]">Your video library starts here</h3>
-              <p className="mt-2 max-w-[420px] text-sm leading-6 text-[#7b8494]">No videos have been added to this local workspace yet. Upload an MP4 to start your library.</p>
-              {user?.channelname ? <Link href={`/channel/${user._id}`} className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[#dd604b] hover:text-[#bd4936]">Upload your first video <ArrowRight className="size-4" aria-hidden="true" /></Link> : <button type="button" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[#dd604b] hover:text-[#bd4936]" onClick={() => setChannelOpen(true)}>Create your channel <ArrowRight className="size-4" aria-hidden="true" /></button>}
+              <p className="mt-2 max-w-[420px] text-sm leading-6 text-[#7b8494] dark:text-[#aab5c8]">No videos have been added to this local workspace yet. Upload an MP4 to start your library.</p>
+              {user?.channelname ? <Link href={`/channel/${user._id}`} className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[#dd604b] dark:text-[#ff9b87] hover:text-[#bd4936] dark:hover:text-[#ff9b87]">Upload your first video <ArrowRight className="size-4" aria-hidden="true" /></Link> : <button type="button" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[#dd604b] dark:text-[#ff9b87] hover:text-[#bd4936] dark:hover:text-[#ff9b87]" onClick={() => setChannelOpen(true)}>Create your channel <ArrowRight className="size-4" aria-hidden="true" /></button>}
             </div>
           )}
 
-          {libraryState === "ready" && videos.length > 0 && matchingVideos.length === 0 && <div className="rounded-3xl border border-[#e8ebf0] bg-white px-6 py-14 text-center"><span className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-[#f3f5f8] text-[#8490a1]"><Film className="size-7" aria-hidden="true" /></span><h3 className="mt-5 text-lg font-semibold">No matching videos</h3><p className="mt-2 text-sm text-[#7b8494]">Try another title or channel name.</p><button type="button" className="mt-4 text-sm font-semibold text-[#dd604b] hover:underline" onClick={() => setSearchQuery("")}>Clear search</button></div>}
+          {libraryState === "ready" && videos.length > 0 && matchingVideos.length === 0 && <div className="rounded-3xl border border-[#e8ebf0] dark:border-[#3b465f] bg-white dark:bg-[#202a3d] px-6 py-14 text-center"><span className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-[#f3f5f8] dark:bg-[#263149] text-[#8490a1] dark:text-[#aab5c8]"><Film className="size-7" aria-hidden="true" /></span><h3 className="mt-5 text-lg font-semibold">No matching videos</h3><p className="mt-2 text-sm text-[#7b8494] dark:text-[#aab5c8]">Try another title or channel name.</p><button type="button" className="mt-4 text-sm font-semibold text-[#dd604b] dark:text-[#ff9b87] hover:underline" onClick={() => setSearchQuery("")}>Clear search</button></div>}
 
           {libraryState === "ready" && matchingVideos.length > 0 && <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{matchingVideos.map((video) => <LocalVideoCard key={video._id} video={video} />)}</div>}
         </section>

@@ -14,7 +14,7 @@ export default function DashboardPage() {
   const channelUrl = user?._id ? `/channel/${user._id}` : "/dashboard";
 
   return (
-    <main className={`${styles.dashboard} min-h-screen bg-[#f7f8fb] text-[#172033]`}>
+    <main className={`${styles.dashboard} min-h-screen bg-[#f7f8fb] dark:bg-[#101624] text-[#172033] dark:text-[#e6ecf7]`}>
       <div className="mx-auto max-w-[1510px] space-y-8 px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
         <section className={`${styles.hero} relative overflow-hidden rounded-[28px] px-7 py-9 text-white sm:px-10 sm:py-11`}>
           <div className="relative z-10 max-w-[560px]">
@@ -51,35 +51,35 @@ export default function DashboardPage() {
         </section>
 
         <section aria-labelledby="workspace-heading" className="pb-12">
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#e16b55]">Your workspace</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#e16b55] dark:text-[#ff9b87]">Your workspace</p>
           <h2 id="workspace-heading" className="mt-1 text-2xl font-semibold tracking-[-0.05em]">Where would you like to go?</h2>
-          <p className="mt-1 text-sm text-[#7d8797]">Everything in this prototype is available from the navigation on the left.</p>
+          <p className="mt-1 text-sm text-[#7d8797] dark:text-[#aab5c8]">Everything in this prototype is available from the navigation on the left.</p>
           <div className="mt-5 grid gap-4 md:grid-cols-3">
-            <Link href="/history" className="group rounded-2xl border border-[#e8ebf0] bg-white p-6 shadow-[0_8px_22px_rgba(24,33,55,0.025)] transition hover:-translate-y-0.5 hover:border-[#f0c4b9] hover:shadow-[0_18px_34px_rgba(24,33,55,0.07)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ed6049]">
-              <span className="flex size-11 items-center justify-center rounded-xl bg-[#fff0ec] text-[#e56a51]"><History className="size-5" aria-hidden="true" /></span>
+            <Link href="/history" className="group rounded-2xl border border-[#e8ebf0] dark:border-[#3b465f] bg-white dark:bg-[#202a3d] p-6 shadow-[0_8px_22px_rgba(24,33,55,0.025)] transition hover:-translate-y-0.5 hover:border-[#f0c4b9] dark:hover:border-[#73505a] hover:shadow-[0_18px_34px_rgba(24,33,55,0.07)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ed6049]">
+              <span className="flex size-11 items-center justify-center rounded-xl bg-[#fff0ec] dark:bg-[#43313a] text-[#e56a51] dark:text-[#ff9b87]"><History className="size-5" aria-hidden="true" /></span>
               <h3 className="mt-5 text-lg font-semibold tracking-[-0.04em]">Watch history</h3>
-              <p className="mt-2 text-sm leading-6 text-[#7b8494]">Pick up from the videos you watched.</p>
-              <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#d95c44]">View history <ArrowRight className="size-4 transition group-hover:translate-x-1" aria-hidden="true" /></span>
+              <p className="mt-2 text-sm leading-6 text-[#7b8494] dark:text-[#aab5c8]">Pick up from the videos you watched.</p>
+              <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#d95c44] dark:text-[#ff9b87]">View history <ArrowRight className="size-4 transition group-hover:translate-x-1" aria-hidden="true" /></span>
             </Link>
-            <Link href="/subscriptions" className="group rounded-2xl border border-[#e8ebf0] bg-white p-6 shadow-[0_8px_22px_rgba(24,33,55,0.025)] transition hover:-translate-y-0.5 hover:border-[#d6cdec] hover:shadow-[0_18px_34px_rgba(24,33,55,0.07)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ed6049]">
-              <span className="flex size-11 items-center justify-center rounded-xl bg-[#efedff] text-[#7363b1]"><Crown className="size-5" aria-hidden="true" /></span>
+            <Link href="/subscriptions" className="group rounded-2xl border border-[#e8ebf0] dark:border-[#3b465f] bg-white dark:bg-[#202a3d] p-6 shadow-[0_8px_22px_rgba(24,33,55,0.025)] transition hover:-translate-y-0.5 hover:border-[#d6cdec] dark:hover:border-[#555073] hover:shadow-[0_18px_34px_rgba(24,33,55,0.07)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ed6049]">
+              <span className="flex size-11 items-center justify-center rounded-xl bg-[#efedff] dark:bg-[#35314b] text-[#7363b1] dark:text-[#c9baff]"><Crown className="size-5" aria-hidden="true" /></span>
               <h3 className="mt-5 text-lg font-semibold tracking-[-0.04em]">Membership</h3>
-              <p className="mt-2 text-sm leading-6 text-[#7b8494]">See your plan and try the local checkout.</p>
-              <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#d95c44]">View plans <ArrowRight className="size-4 transition group-hover:translate-x-1" aria-hidden="true" /></span>
+              <p className="mt-2 text-sm leading-6 text-[#7b8494] dark:text-[#aab5c8]">See your plan and try the local checkout.</p>
+              <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#d95c44] dark:text-[#ff9b87]">View plans <ArrowRight className="size-4 transition group-hover:translate-x-1" aria-hidden="true" /></span>
             </Link>
             {user?.channelname ? (
-              <Link href={channelUrl} className="group rounded-2xl border border-[#e8ebf0] bg-white p-6 shadow-[0_8px_22px_rgba(24,33,55,0.025)] transition hover:-translate-y-0.5 hover:border-[#c7e5da] hover:shadow-[0_18px_34px_rgba(24,33,55,0.07)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ed6049]">
-                <span className="flex size-11 items-center justify-center rounded-xl bg-[#e9f5f1] text-[#399877]"><UserRound className="size-5" aria-hidden="true" /></span>
+              <Link href={channelUrl} className="group rounded-2xl border border-[#e8ebf0] dark:border-[#3b465f] bg-white dark:bg-[#202a3d] p-6 shadow-[0_8px_22px_rgba(24,33,55,0.025)] transition hover:-translate-y-0.5 hover:border-[#c7e5da] dark:hover:border-[#49685a] hover:shadow-[0_18px_34px_rgba(24,33,55,0.07)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ed6049]">
+                <span className="flex size-11 items-center justify-center rounded-xl bg-[#e9f5f1] dark:bg-[#273d3a] text-[#399877] dark:text-[#91d7ae]"><UserRound className="size-5" aria-hidden="true" /></span>
                 <h3 className="mt-5 truncate text-lg font-semibold tracking-[-0.04em]">{user.channelname}</h3>
-                <p className="mt-2 text-sm leading-6 text-[#7b8494]">Upload and manage videos in your channel.</p>
-                <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#d95c44]">Open channel <ArrowRight className="size-4 transition group-hover:translate-x-1" aria-hidden="true" /></span>
+                <p className="mt-2 text-sm leading-6 text-[#7b8494] dark:text-[#aab5c8]">Upload and manage videos in your channel.</p>
+                <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#d95c44] dark:text-[#ff9b87]">Open channel <ArrowRight className="size-4 transition group-hover:translate-x-1" aria-hidden="true" /></span>
               </Link>
             ) : (
-              <button type="button" className="group rounded-2xl border border-[#e8ebf0] bg-white p-6 text-left shadow-[0_8px_22px_rgba(24,33,55,0.025)] transition hover:-translate-y-0.5 hover:border-[#c7e5da] hover:shadow-[0_18px_34px_rgba(24,33,55,0.07)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ed6049]" onClick={() => setChannelOpen(true)}>
-                <span className="flex size-11 items-center justify-center rounded-xl bg-[#e9f5f1] text-[#399877]"><UserRound className="size-5" aria-hidden="true" /></span>
+              <button type="button" className="group rounded-2xl border border-[#e8ebf0] dark:border-[#3b465f] bg-white dark:bg-[#202a3d] p-6 text-left shadow-[0_8px_22px_rgba(24,33,55,0.025)] transition hover:-translate-y-0.5 hover:border-[#c7e5da] dark:hover:border-[#49685a] hover:shadow-[0_18px_34px_rgba(24,33,55,0.07)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ed6049]" onClick={() => setChannelOpen(true)}>
+                <span className="flex size-11 items-center justify-center rounded-xl bg-[#e9f5f1] dark:bg-[#273d3a] text-[#399877] dark:text-[#91d7ae]"><UserRound className="size-5" aria-hidden="true" /></span>
                 <h3 className="mt-5 text-lg font-semibold tracking-[-0.04em]">Your channel</h3>
-                <p className="mt-2 text-sm leading-6 text-[#7b8494]">Create a channel to start uploading.</p>
-                <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#d95c44]">Create channel <ArrowRight className="size-4 transition group-hover:translate-x-1" aria-hidden="true" /></span>
+                <p className="mt-2 text-sm leading-6 text-[#7b8494] dark:text-[#aab5c8]">Create a channel to start uploading.</p>
+                <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#d95c44] dark:text-[#ff9b87]">Create channel <ArrowRight className="size-4 transition group-hover:translate-x-1" aria-hidden="true" /></span>
               </button>
             )}
           </div>

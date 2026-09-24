@@ -71,12 +71,12 @@ export default function DownloadPanel({ video }: { video: LocalVideo }) {
     }
   }
 
-  return <section className="flex flex-wrap items-center justify-between gap-4 rounded-[22px] border border-[#e8ebf0] bg-white p-5 sm:p-6" aria-label="Download this video">
+  return <section className="flex flex-wrap items-center justify-between gap-4 rounded-[22px] border border-[#e8ebf0] dark:border-[#3b465f] bg-white dark:bg-[#202a3d] p-5 sm:p-6" aria-label="Download this video">
     <div className="flex min-w-0 items-start gap-3">
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#eaf5ee] text-[#518b64]"><Download className="size-5" aria-hidden="true" /></span>
-      <div><h2 className="text-sm font-semibold text-[#344054]">Download for offline viewing</h2><p className="mt-1 text-xs text-[#7d8797]">{loading ? "Checking today's quota…" : usage ? `${usage.remaining} of ${usage.limit} downloads remaining today · resets at midnight IST` : "Your quota will be checked before download."}</p><p className="mt-1 inline-flex items-center gap-1 text-[11px] text-[#929bab]"><ShieldCheck className="size-3" aria-hidden="true" /> Your plan and this video are checked on every request.</p><Link href="/downloads" className="mt-2 inline-block text-xs font-semibold text-[#d95c44] hover:underline">View download history</Link></div>
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#eaf5ee] dark:bg-[#273d3a] text-[#518b64] dark:text-[#91d7ae]"><Download className="size-5" aria-hidden="true" /></span>
+      <div><h2 className="text-sm font-semibold text-[#344054] dark:text-[#e6ecf7]">Download for offline viewing</h2><p className="mt-1 text-xs text-[#7d8797] dark:text-[#aab5c8]">{loading ? "Checking today's quota…" : usage ? `${usage.remaining} of ${usage.limit} downloads remaining today · resets at midnight IST` : "Your quota will be checked before download."}</p><p className="mt-1 inline-flex items-center gap-1 text-[11px] text-[#929bab] dark:text-[#aab5c8]"><ShieldCheck className="size-3" aria-hidden="true" /> Your plan and this video are checked on every request.</p><Link href="/downloads" className="mt-2 inline-block text-xs font-semibold text-[#d95c44] dark:text-[#ff9b87] hover:underline">View download history</Link></div>
     </div>
     <button type="button" onClick={() => void startDownload()} disabled={busy || loading || usage?.remaining === 0} className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#ed6049] px-4 text-xs font-semibold text-white transition hover:bg-[#d9543e] disabled:cursor-not-allowed disabled:opacity-50"><Download className="size-4" aria-hidden="true" /> {busy ? "Preparing file…" : usage?.remaining === 0 ? "Quota used today" : "Download MP4"}</button>
-    {(error || notice) && <p role={error ? "alert" : "status"} className={`w-full text-xs ${error ? "text-[#a65348]" : "text-[#518b64]"}`}>{error || notice}</p>}
+    {(error || notice) && <p role={error ? "alert" : "status"} className={`w-full text-xs ${error ? "text-[#a65348] dark:text-[#ff9b87]" : "text-[#518b64] dark:text-[#91d7ae]"}`}>{error || notice}</p>}
   </section>;
 }

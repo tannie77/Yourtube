@@ -119,61 +119,61 @@ export default function VideoUploader({ channelName, onUploaded }: Props) {
   return (
     <form onSubmit={(event) => { void submit(event); }} className="space-y-5">
       <div>
-        <h2 className="text-xl font-semibold tracking-[-0.045em] text-[#172033]">Upload a video</h2>
-        <p className="mt-1 text-sm text-[#7d8797]">{channelName ? `Share an MP4 from ${channelName}.` : "Share an MP4 with your local video library."}</p>
+        <h2 className="text-xl font-semibold tracking-[-0.045em] text-[#172033] dark:text-[#e6ecf7]">Upload a video</h2>
+        <p className="mt-1 text-sm text-[#7d8797] dark:text-[#aab5c8]">{channelName ? `Share an MP4 from ${channelName}.` : "Share an MP4 with your local video library."}</p>
       </div>
 
-      <label htmlFor="video-file" className="group flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#dce2ea] bg-[#fafbfc] px-5 py-7 text-center transition hover:border-[#ed9b89] hover:bg-[#fff8f5] focus-within:border-[#ed6049] focus-within:ring-4 focus-within:ring-[#ed6049]/10">
-        <span className="flex size-11 items-center justify-center rounded-xl bg-[#fff0ec] text-[#e56a51]"><Upload className="size-5" aria-hidden="true" /></span>
-        <span className="mt-3 text-sm font-semibold text-[#344054]">{file ? "Choose a different MP4" : "Choose an MP4 video"}</span>
-        <span className="mt-1 text-xs text-[#929bab]">Stored on this computer · up to 100 MB</span>
+      <label htmlFor="video-file" className="group flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#dce2ea] dark:border-[#3b465f] bg-[#fafbfc] dark:bg-[#263149] px-5 py-7 text-center transition hover:border-[#ed9b89] dark:hover:border-[#73505a] hover:bg-[#fff8f5] dark:hover:bg-[#43313a] focus-within:border-[#ed6049] focus-within:ring-4 focus-within:ring-[#ed6049]/10">
+        <span className="flex size-11 items-center justify-center rounded-xl bg-[#fff0ec] dark:bg-[#43313a] text-[#e56a51] dark:text-[#ff9b87]"><Upload className="size-5" aria-hidden="true" /></span>
+        <span className="mt-3 text-sm font-semibold text-[#344054] dark:text-[#e6ecf7]">{file ? "Choose a different MP4" : "Choose an MP4 video"}</span>
+        <span className="mt-1 text-xs text-[#929bab] dark:text-[#aab5c8]">Stored on this computer · up to 100 MB</span>
         <input ref={fileInput} id="video-file" type="file" accept="video/mp4,.mp4" onChange={selectFile} disabled={uploading} className="sr-only" aria-describedby="video-file-help" />
       </label>
       <p id="video-file-help" className="sr-only">Only MP4 files up to 100 MB can be uploaded.</p>
 
       {file && (
-        <div className="flex items-center gap-3 rounded-xl border border-[#e8ebf0] bg-white p-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#f5f2ff] text-[#7666a7]"><FileVideo className="size-5" aria-hidden="true" /></span>
-          <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-[#344054]">{file.name}</p><p className="mt-0.5 text-xs text-[#929bab]">{(file.size / (1024 * 1024)).toFixed(1)} MB</p></div>
-          <button type="button" aria-label="Remove selected file" disabled={uploading} onClick={removeFile} className="rounded-lg p-2 text-[#929bab] hover:bg-[#f5f6f8] hover:text-[#344054] disabled:opacity-40"><X className="size-4" aria-hidden="true" /></button>
+        <div className="flex items-center gap-3 rounded-xl border border-[#e8ebf0] dark:border-[#3b465f] bg-white dark:bg-[#202a3d] p-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#f5f2ff] dark:bg-[#35314b] text-[#7666a7] dark:text-[#c9baff]"><FileVideo className="size-5" aria-hidden="true" /></span>
+          <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-[#344054] dark:text-[#e6ecf7]">{file.name}</p><p className="mt-0.5 text-xs text-[#929bab] dark:text-[#aab5c8]">{(file.size / (1024 * 1024)).toFixed(1)} MB</p></div>
+          <button type="button" aria-label="Remove selected file" disabled={uploading} onClick={removeFile} className="rounded-lg p-2 text-[#929bab] dark:text-[#aab5c8] hover:bg-[#f5f6f8] dark:hover:bg-[#263149] hover:text-[#344054] dark:hover:text-[#e6ecf7] disabled:opacity-40"><X className="size-4" aria-hidden="true" /></button>
         </div>
       )}
 
       <div>
-        <label htmlFor="video-captions" className="mb-2 block text-sm font-semibold text-[#344054]">Captions <span className="font-normal text-[#8d96a5]">(optional)</span></label>
-        <input ref={captionInput} id="video-captions" type="file" accept=".vtt,text/vtt" onChange={selectCaptions} disabled={uploading} className="block w-full rounded-xl border border-[#dce2ea] bg-white p-3 text-sm text-[#344054] file:mr-3 file:rounded-lg file:border-0 file:bg-[#fff0ec] file:px-3 file:py-2 file:font-semibold file:text-[#d75b45] disabled:opacity-60" />
-        <p className="mt-1.5 text-xs text-[#8d96a5]">Upload a UTF-8 WebVTT file with time-coded cues, up to 1 MB.</p>
+        <label htmlFor="video-captions" className="mb-2 block text-sm font-semibold text-[#344054] dark:text-[#e6ecf7]">Captions <span className="font-normal text-[#8d96a5] dark:text-[#aab5c8]">(optional)</span></label>
+        <input ref={captionInput} id="video-captions" type="file" accept=".vtt,text/vtt" onChange={selectCaptions} disabled={uploading} className="block w-full rounded-xl border border-[#dce2ea] dark:border-[#3b465f] bg-white dark:bg-[#202a3d] p-3 text-sm text-[#344054] dark:text-[#e6ecf7] file:mr-3 file:rounded-lg file:border-0 file:bg-[#fff0ec] dark:file:bg-[#43313a] file:px-3 file:py-2 file:font-semibold file:text-[#d75b45] dark:file:text-[#ff9b87] disabled:opacity-60" />
+        <p className="mt-1.5 text-xs text-[#8d96a5] dark:text-[#aab5c8]">Upload a UTF-8 WebVTT file with time-coded cues, up to 1 MB.</p>
       </div>
 
       <div>
-        <label htmlFor="video-title" className="mb-2 block text-sm font-semibold text-[#344054]">Video title</label>
-        <input id="video-title" type="text" maxLength={120} value={title} onChange={(event) => setTitle(event.target.value)} disabled={uploading} placeholder="Give your video a name" className="h-12 w-full rounded-xl border border-[#dce2ea] bg-white px-4 text-sm text-[#172033] outline-none transition placeholder:text-[#a0a8b5] focus:border-[#ed6049] focus:ring-4 focus:ring-[#ed6049]/10 disabled:opacity-60" />
+        <label htmlFor="video-title" className="mb-2 block text-sm font-semibold text-[#344054] dark:text-[#e6ecf7]">Video title</label>
+        <input id="video-title" type="text" maxLength={120} value={title} onChange={(event) => setTitle(event.target.value)} disabled={uploading} placeholder="Give your video a name" className="h-12 w-full rounded-xl border border-[#dce2ea] dark:border-[#3b465f] bg-white dark:bg-[#202a3d] px-4 text-sm text-[#172033] dark:text-[#e6ecf7] outline-none transition placeholder:text-[#a0a8b5] dark:placeholder:text-[#aab5c8] focus:border-[#ed6049] focus:ring-4 focus:ring-[#ed6049]/10 disabled:opacity-60" />
       </div>
 
       <div>
-        <label htmlFor="video-access-plan" className="mb-2 block text-sm font-semibold text-[#344054]">Minimum viewer plan</label>
-        <select id="video-access-plan" value={accessPlan} onChange={(event) => setAccessPlan(event.target.value as VideoAccessPlan)} disabled={uploading} className="h-12 w-full rounded-xl border border-[#dce2ea] bg-white px-4 text-sm text-[#172033] outline-none transition focus:border-[#ed6049] focus:ring-4 focus:ring-[#ed6049]/10 disabled:opacity-60">
+        <label htmlFor="video-access-plan" className="mb-2 block text-sm font-semibold text-[#344054] dark:text-[#e6ecf7]">Minimum viewer plan</label>
+        <select id="video-access-plan" value={accessPlan} onChange={(event) => setAccessPlan(event.target.value as VideoAccessPlan)} disabled={uploading} className="h-12 w-full rounded-xl border border-[#dce2ea] dark:border-[#3b465f] bg-white dark:bg-[#202a3d] px-4 text-sm text-[#172033] dark:text-[#e6ecf7] outline-none transition focus:border-[#ed6049] focus:ring-4 focus:ring-[#ed6049]/10 disabled:opacity-60">
           <option value="free">Free · anyone signed in</option>
           <option value="bronze">Bronze or higher</option>
           <option value="silver">Silver or higher</option>
           <option value="gold">Gold only</option>
         </select>
-        <p className="mt-1.5 text-xs leading-5 text-[#8d96a5]">You can always preview your own upload. Other viewers need the selected plan or higher.</p>
-        <p className="mt-1 text-xs leading-5 text-[#8d96a5]">New uploads make lower-resolution local copies where needed. Free can select up to 480p, Bronze 720p, Silver 1080p and Gold 4K. Older uploads without copies keep their source-quality gate.</p>
+        <p className="mt-1.5 text-xs leading-5 text-[#8d96a5] dark:text-[#aab5c8]">You can always preview your own upload. Other viewers need the selected plan or higher.</p>
+        <p className="mt-1 text-xs leading-5 text-[#8d96a5] dark:text-[#aab5c8]">New uploads make lower-resolution local copies where needed. Free can select up to 480p, Bronze 720p, Silver 1080p and Gold 4K. Older uploads without copies keep their source-quality gate.</p>
       </div>
 
-      <label className="flex items-start gap-3 rounded-xl border border-[#e8ebf0] bg-[#fafbfc] p-4 text-sm text-[#344054]">
+      <label className="flex items-start gap-3 rounded-xl border border-[#e8ebf0] dark:border-[#3b465f] bg-[#fafbfc] dark:bg-[#263149] p-4 text-sm text-[#344054] dark:text-[#e6ecf7]">
         <input type="checkbox" checked={earlyAccess} onChange={(event) => setEarlyAccess(event.target.checked)} disabled={uploading} className="mt-0.5 accent-[#ed6049]" />
-        <span><span className="font-semibold">Gold early access for seven days</span><span className="mt-1 block text-xs leading-5 text-[#8d96a5]">After seven days, the selected minimum plan and available quality determine access automatically.</span></span>
+        <span><span className="font-semibold">Gold early access for seven days</span><span className="mt-1 block text-xs leading-5 text-[#8d96a5] dark:text-[#aab5c8]">After seven days, the selected minimum plan and available quality determine access automatically.</span></span>
       </label>
 
-      {uploading && <div aria-live="polite"><div className="mb-2 flex justify-between text-xs font-semibold text-[#697486]"><span>{progress === 100 ? "Creating local qualities and previews…" : "Uploading…"}</span><span>{progress}%</span></div><div className="h-2 overflow-hidden rounded-full bg-[#f3e6e2]"><div className="h-full rounded-full bg-[#ed6049] transition-all" style={{ width: `${progress}%` }} /></div></div>}
-      {error && <p role="alert" className="rounded-xl border border-[#f3d5cf] bg-[#fff7f4] px-4 py-3 text-sm text-[#a34d3d]">{error}</p>}
-      {uploadedVideo && <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#cce7d9] bg-[#f2fbf6] px-4 py-3 text-sm text-[#276b4b]"><span>Video uploaded successfully.</span><Link href={`/watch/${uploadedVideo._id}`} className="inline-flex items-center gap-1 font-semibold hover:underline">Watch it <ArrowUpRight className="size-4" aria-hidden="true" /></Link></div>}
+      {uploading && <div aria-live="polite"><div className="mb-2 flex justify-between text-xs font-semibold text-[#697486] dark:text-[#aab5c8]"><span>{progress === 100 ? "Creating local qualities and previews…" : "Uploading…"}</span><span>{progress}%</span></div><div className="h-2 overflow-hidden rounded-full bg-[#f3e6e2] dark:bg-[#43313a]"><div className="h-full rounded-full bg-[#ed6049] transition-all" style={{ width: `${progress}%` }} /></div></div>}
+      {error && <p role="alert" className="rounded-xl border border-[#f3d5cf] dark:border-[#73505a] bg-[#fff7f4] dark:bg-[#43313a] px-4 py-3 text-sm text-[#a34d3d] dark:text-[#ff9b87]">{error}</p>}
+      {uploadedVideo && <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#cce7d9] dark:border-[#49685a] bg-[#f2fbf6] dark:bg-[#273d3a] px-4 py-3 text-sm text-[#276b4b] dark:text-[#91d7ae]"><span>Video uploaded successfully.</span><Link href={`/watch/${uploadedVideo._id}`} className="inline-flex items-center gap-1 font-semibold hover:underline">Watch it <ArrowUpRight className="size-4" aria-hidden="true" /></Link></div>}
 
       <div className="flex flex-wrap items-center gap-3">
         <button type="submit" disabled={uploading || !file || !title.trim()} className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#ed6049] px-5 text-sm font-semibold text-white shadow-[0_10px_18px_rgba(237,96,73,0.18)] transition hover:bg-[#dd563f] disabled:cursor-not-allowed disabled:opacity-50"><Upload className="size-4" aria-hidden="true" />{uploading ? "Uploading…" : "Upload video"}</button>
-        {uploading && <button type="button" onClick={() => requestController.current?.abort()} className="h-11 rounded-xl px-3 text-sm font-semibold text-[#697486] hover:bg-[#f6f7f9]">Cancel upload</button>}
+        {uploading && <button type="button" onClick={() => requestController.current?.abort()} className="h-11 rounded-xl px-3 text-sm font-semibold text-[#697486] dark:text-[#aab5c8] hover:bg-[#f6f7f9] dark:hover:bg-[#263149]">Cancel upload</button>}
       </div>
     </form>
   );

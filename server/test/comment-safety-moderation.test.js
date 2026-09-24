@@ -162,3 +162,43 @@ test("local translation failure keeps original text, and admin reports are revie
   assert.deepEqual(history.map((entry) => entry.action), ["created", "moderated"]);
   delete process.env.COMMENT_TRANSLATE_PORT;
 });
+
+test("Hindi and Spanish comments remain intact through sorting and report review", async () => {
+  const author = await register("Multilingual Author");
+  const reporter = await register("Multilingual Reporter");
+  const admin = await register("Multilingual Moderator");
+  await User.updateOne({ _id: admin.user._id }, { $set: { role: "admin" } });
+  const video = await videoFor(author.user, "Multilingual moderation demo");
+  const route = `/comment/${video.id}`;
+
+  const hindiText = "नमस्ते, यह उपयोगी टिप्पणी है।";
+  const spanishText = "Hola, este vídeo es útil.";
+  const hindiResponse = await request(route, author.cookie, "POST", { commentbody: hindiText });
+  const spanishResponse = await request(route, reporter.cookie, "POST", { commentbody: spanishText });
+  assert.equal(hindiResponse.status, 201);
+  assert.equal(spanishResponse.status, 201);
+  const hindi = (await hindiResponse.json()).comment;
+  const spanish = (await spanishResponse.json()).comment;
+
+  const sortedResponse = await request(`${route}?sort=oldest`, reporter.cookie);
+  assert.equal(sortedResponse.status, 200);
+  const sorted = (await sortedResponse.json()).comments;
+  assert.deepEqual(sorted.map((item) => item._id), [hindi._id, spanish._id]);
+  assert.deepEqual(sorted.map((item) => item.commentbody), [hindiText, spanishText]);
+
+  const reportResponse = await request(`/comment/${hindi._id}/report`, reporter.cookie, "POST", { reason: "offensive" });
+  assert.equal(reportResponse.status, 201);
+  const reportId = (await reportResponse.json()).report._id;
+  const queueResponse = await request("/comment/moderation/queue", admin.cookie);
+  assert.equal(queueResponse.status, 200);
+  const queued = (await queueResponse.json()).reports.find((item) => item._id === reportId);
+  assert.equal(queued.reportedText, hindiText);
+  assert.equal(queued.comment.text, hindiText);
+
+  assert.equal((await request(`/comment/moderation/${reportId}`, admin.cookie, "POST", { decision: "remove" })).status, 200);
+  const finalResponse = await request(route, reporter.cookie);
+  assert.equal(finalResponse.status, 200);
+  const finalComments = (await finalResponse.json()).comments;
+  assert.equal(finalComments.find((item) => item._id === hindi._id).commentbody, null);
+  assert.equal(finalComments.find((item) => item._id === spanish._id).commentbody, spanishText);
+});

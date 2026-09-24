@@ -123,6 +123,78 @@
   color: #6b7585;
 }
 
+:global(.dark) .planCard {
+  border-color: #3b465f;
+  background: #202a3d;
+}
+
+:global(.dark) .featuredCard {
+  border-color: #80545c;
+}
+
+:global(.dark) .planIcon {
+  color: #c6d1e2;
+  background: #303b50;
+}
+
+:global(.dark) .iconBronze {
+  color: #efbc91;
+  background: #44382e;
+}
+
+:global(.dark) .iconSilver {
+  color: #ffab91;
+  background: #43313a;
+}
+
+:global(.dark) .iconGold {
+  color: #eed18e;
+  background: #443d2e;
+}
+
+:global(.dark) .outcomeButton {
+  border-color: #3b465f;
+  background: #263149;
+  color: #d6deeb;
+}
+
+:global(.dark) .outcomeButton:hover:not(:disabled) {
+  border-color: #65718a;
+  background: #303d55;
+}
+
+:global(.dark) .successButton {
+  border-color: #49685a;
+  background: #273d3a;
+  color: #91d7ae;
+}
+
+:global(.dark) .successButton:hover:not(:disabled) {
+  border-color: #67957b;
+  background: #315045;
+}
+
+:global(.dark) .statuspending,
+:global(.dark) .statusprocessing {
+  background: #493d2d;
+  color: #edc786;
+}
+
+:global(.dark) .statuspaid {
+  background: #273d3a;
+  color: #91d7ae;
+}
+
+:global(.dark) .statusfailed {
+  background: #43313a;
+  color: #ff9b87;
+}
+
+:global(.dark) .statuscancelled {
+  background: #303b50;
+  color: #aab5c8;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .planCard {
     transition: none;

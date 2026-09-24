@@ -100,31 +100,31 @@ export default function SignInPage() {
     setError("");
   }
 
-  const fieldClass = "h-13 w-full rounded-2xl border border-[#d9dde5] bg-white pl-12 pr-4 text-[15px] text-[#171b2a] outline-none transition placeholder:text-[#9ca3af] hover:border-[#b7beca] focus-visible:border-[#e65b45] focus-visible:ring-4 focus-visible:ring-[#e65b45]/10";
+  const fieldClass = "h-13 w-full rounded-2xl border border-[#d9dde5] dark:border-[#3b465f] bg-white dark:bg-[#202a3d] pl-12 pr-4 text-[15px] text-[#171b2a] dark:text-[#e6ecf7] outline-none transition placeholder:text-[#9ca3af] dark:placeholder:text-[#aab5c8] hover:border-[#b7beca] dark:hover:border-[#555073] focus-visible:border-[#e65b45] focus-visible:ring-4 focus-visible:ring-[#e65b45]/10";
 
   return (
     <main className={`${styles.authPage} min-h-screen lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]`}>
-      <section className="flex min-h-screen flex-col bg-[#faf9f7] px-6 py-6 sm:px-10 lg:px-12 lg:py-7 xl:px-20">
+      <section className="flex min-h-screen flex-col bg-[#faf9f7] dark:bg-[#101624] px-6 py-6 sm:px-10 lg:px-12 lg:py-7 xl:px-20">
         <div className="flex items-center justify-between gap-4">
           <div className="inline-flex items-center gap-3" aria-label="VidCircle">
             <span className="flex size-10 items-center justify-center rounded-[13px] bg-[#ed6049] text-white shadow-[0_8px_18px_rgba(237,96,73,0.24)]">
               <Play className="ml-0.5 size-5 fill-current" strokeWidth={1.5} aria-hidden="true" />
             </span>
-            <span className="text-[22px] font-bold tracking-[-0.06em] text-[#171b2a]">VidCircle<span className="text-[#ed6049]">.</span></span>
+            <span className="text-[22px] font-bold tracking-[-0.06em] text-[#171b2a] dark:text-[#e6ecf7]">VidCircle<span className="text-[#ed6049] dark:text-[#ff9b87]">.</span></span>
           </div>
         </div>
 
         <div className="flex flex-1 items-center justify-center py-8 sm:py-10 lg:py-6">
           <div className="w-full max-w-[440px]">
-            <span className="inline-flex items-center gap-2 rounded-full border border-[#f5ddd6] bg-[#fff1ec] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.15em] text-[#c45a42]">
+            <span className="inline-flex items-center gap-2 rounded-full border border-[#f5ddd6] dark:border-[#73505a] bg-[#fff1ec] dark:bg-[#43313a] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.15em] text-[#c45a42] dark:text-[#ff9b87]">
               <span className="size-1.5 rounded-full bg-[#ed6049]" />
               Your space for what&apos;s next
             </span>
 
-            <h1 className="mt-5 text-[clamp(2.7rem,4.5vw,3.6rem)] leading-[1.04] font-semibold tracking-[-0.065em] text-[#171b2a]">
+            <h1 className="mt-5 text-[clamp(2.7rem,4.5vw,3.6rem)] leading-[1.04] font-semibold tracking-[-0.065em] text-[#171b2a] dark:text-[#e6ecf7]">
               {otpChallenge ? <>Check your<br />local inbox.</> : isRegistering ? <>Make room<br />for more.</> : <>Welcome<br />back.</>}
             </h1>
-            <p className="mt-3 max-w-[360px] text-[15px] leading-7 text-[#687181]">
+            <p className="mt-3 max-w-[360px] text-[15px] leading-7 text-[#687181] dark:text-[#aab5c8]">
               {otpChallenge
                 ? `Enter the six-digit code captured for ${otpChallenge.destination} in Mailpit.`
                 : isRegistering
@@ -135,63 +135,63 @@ export default function SignInPage() {
             <form onSubmit={submit} className="mt-7 space-y-4">
               {!otpChallenge && isRegistering && (
                 <div>
-                  <label htmlFor="name" className="mb-2 block text-sm font-semibold text-[#242938]">Your name</label>
+                  <label htmlFor="name" className="mb-2 block text-sm font-semibold text-[#242938] dark:text-[#e6ecf7]">Your name</label>
                   <div className="relative">
-                    <UserRound className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-[#9aa2af]" aria-hidden="true" />
+                    <UserRound className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-[#9aa2af] dark:text-[#aab5c8]" aria-hidden="true" />
                     <input id="name" name="name" type="text" autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} maxLength={80} placeholder="What should we call you?" className={fieldClass} required />
                   </div>
                 </div>
               )}
 
               {!otpChallenge && <div>
-                <label htmlFor="email" className="mb-2 block text-sm font-semibold text-[#242938]">Email address</label>
+                <label htmlFor="email" className="mb-2 block text-sm font-semibold text-[#242938] dark:text-[#e6ecf7]">Email address</label>
                 <div className="relative">
-                  <Mail className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-[#9aa2af]" aria-hidden="true" />
+                  <Mail className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-[#9aa2af] dark:text-[#aab5c8]" aria-hidden="true" />
                   <input id="email" name="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" className={fieldClass} aria-invalid={Boolean(error)} aria-describedby={error ? "auth-error" : undefined} required />
                 </div>
               </div>}
 
               {!otpChallenge && <div>
                 <div className="mb-2 flex items-center justify-between gap-3">
-                  <label htmlFor="password" className="text-sm font-semibold text-[#242938]">Password</label>
-                  {isRegistering && <span className="text-xs text-[#8a92a0]">At least 8 characters</span>}
+                  <label htmlFor="password" className="text-sm font-semibold text-[#242938] dark:text-[#e6ecf7]">Password</label>
+                  {isRegistering && <span className="text-xs text-[#8a92a0] dark:text-[#aab5c8]">At least 8 characters</span>}
                 </div>
                 <div className="relative">
-                  <LockKeyhole className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-[#9aa2af]" aria-hidden="true" />
+                  <LockKeyhole className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-[#9aa2af] dark:text-[#aab5c8]" aria-hidden="true" />
                   <input id="password" name="password" type={showPassword ? "text" : "password"} autoComplete={isRegistering ? "new-password" : "current-password"} value={password} onChange={(event) => setPassword(event.target.value)} minLength={isRegistering ? 8 : undefined} placeholder={isRegistering ? "Create a password" : "Enter your password"} className={`${fieldClass} pr-12`} aria-invalid={Boolean(error)} aria-describedby={error ? "auth-error" : undefined} required />
-                  <button type="button" onClick={() => setShowPassword((visible) => !visible)} className="absolute top-1/2 right-4 flex size-6 -translate-y-1/2 items-center justify-center rounded text-[#818a99] transition hover:text-[#242938] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e65b45]" aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword}>
+                  <button type="button" onClick={() => setShowPassword((visible) => !visible)} className="absolute top-1/2 right-4 flex size-6 -translate-y-1/2 items-center justify-center rounded text-[#818a99] dark:text-[#aab5c8] transition hover:text-[#242938] dark:hover:text-[#e6ecf7] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e65b45]" aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword}>
                     {showPassword ? <EyeOff className="size-[18px]" aria-hidden="true" /> : <Eye className="size-[18px]" aria-hidden="true" />}
                   </button>
                 </div>
               </div>}
 
               {!otpChallenge && (
-                <fieldset className="rounded-2xl border border-[#e2e5ea] bg-[#f7f8fa] p-4">
-                  <legend className="px-1 text-xs font-bold uppercase tracking-[0.12em] text-[#6f7888]">Local test location</legend>
-                  <p className="mb-3 flex items-start gap-2 text-xs leading-5 text-[#7a8391]">
+                <fieldset className="rounded-2xl border border-[#e2e5ea] dark:border-[#3b465f] bg-[#f7f8fa] dark:bg-[#263149] p-4">
+                  <legend className="px-1 text-xs font-bold uppercase tracking-[0.12em] text-[#6f7888] dark:text-[#aab5c8]">Local test location</legend>
+                  <p className="mb-3 flex items-start gap-2 text-xs leading-5 text-[#7a8391] dark:text-[#aab5c8]">
                     <MapPin className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
                     Optional demo values only. Changing either value on a later sign-in triggers local OTP verification.
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <div><label htmlFor="test-city" className="mb-1.5 block text-xs font-semibold text-[#424958]">Test city</label><input id="test-city" value={testCity} onChange={(event) => setTestCity(event.target.value)} maxLength={80} placeholder="e.g. Pune" className="h-10 w-full rounded-xl border border-[#d9dde5] bg-white px-3 text-sm text-[#171b2a] outline-none focus-visible:border-[#e65b45] focus-visible:ring-3 focus-visible:ring-[#e65b45]/10" /></div>
-                    <div><label htmlFor="test-state" className="mb-1.5 block text-xs font-semibold text-[#424958]">Test state</label><input id="test-state" value={testState} onChange={(event) => setTestState(event.target.value)} maxLength={80} placeholder="e.g. Maharashtra" className="h-10 w-full rounded-xl border border-[#d9dde5] bg-white px-3 text-sm text-[#171b2a] outline-none focus-visible:border-[#e65b45] focus-visible:ring-3 focus-visible:ring-[#e65b45]/10" /></div>
+                    <div><label htmlFor="test-city" className="mb-1.5 block text-xs font-semibold text-[#424958] dark:text-[#e6ecf7]">Test city</label><input id="test-city" value={testCity} onChange={(event) => setTestCity(event.target.value)} maxLength={80} placeholder="e.g. Pune" className="h-10 w-full rounded-xl border border-[#d9dde5] dark:border-[#3b465f] bg-white dark:bg-[#202a3d] px-3 text-sm text-[#171b2a] dark:text-[#e6ecf7] outline-none focus-visible:border-[#e65b45] focus-visible:ring-3 focus-visible:ring-[#e65b45]/10" /></div>
+                    <div><label htmlFor="test-state" className="mb-1.5 block text-xs font-semibold text-[#424958] dark:text-[#e6ecf7]">Test state</label><input id="test-state" value={testState} onChange={(event) => setTestState(event.target.value)} maxLength={80} placeholder="e.g. Maharashtra" className="h-10 w-full rounded-xl border border-[#d9dde5] dark:border-[#3b465f] bg-white dark:bg-[#202a3d] px-3 text-sm text-[#171b2a] dark:text-[#e6ecf7] outline-none focus-visible:border-[#e65b45] focus-visible:ring-3 focus-visible:ring-[#e65b45]/10" /></div>
                   </div>
                 </fieldset>
               )}
 
               {otpChallenge && (
                 <div>
-                  <label htmlFor="otp-code" className="mb-2 block text-sm font-semibold text-[#242938]">One-time code</label>
+                  <label htmlFor="otp-code" className="mb-2 block text-sm font-semibold text-[#242938] dark:text-[#e6ecf7]">One-time code</label>
                   <div className="relative">
-                    <KeyRound className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-[#9aa2af]" aria-hidden="true" />
+                    <KeyRound className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-[#9aa2af] dark:text-[#aab5c8]" aria-hidden="true" />
                     <input id="otp-code" name="otp-code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={otpCode} onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="000000" className={`${fieldClass} font-mono tracking-[0.35em]`} aria-invalid={Boolean(error)} aria-describedby={error ? "auth-error" : "otp-help"} required autoFocus />
                   </div>
-                  <p id="otp-help" className="mt-2 flex items-start gap-2 text-xs leading-5 text-[#7a8391]"><ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-[#4e8b69]" aria-hidden="true" />The code expires in ten minutes and is available only in the local Mailpit inbox.</p>
+                  <p id="otp-help" className="mt-2 flex items-start gap-2 text-xs leading-5 text-[#7a8391] dark:text-[#aab5c8]"><ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-[#4e8b69] dark:text-[#91d7ae]" aria-hidden="true" />The code expires in ten minutes and is available only in the local Mailpit inbox.</p>
                 </div>
               )}
 
               {error && (
-                <p id="auth-error" role="alert" className="flex items-start gap-2 rounded-xl bg-[#fff0ed] px-4 py-3 text-sm leading-5 text-[#a53828]">
+                <p id="auth-error" role="alert" className="flex items-start gap-2 rounded-xl bg-[#fff0ed] dark:bg-[#43313a] px-4 py-3 text-sm leading-5 text-[#a53828] dark:text-[#ff9b87]">
                   <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
                   {error}
                 </p>
@@ -204,17 +204,17 @@ export default function SignInPage() {
             </form>
 
             {otpChallenge ? (
-              <p className="mt-6 text-center text-sm text-[#697383]">Not this sign-in? <button type="button" onClick={restartSignIn} className="font-semibold text-[#db5b45] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#e65b45]">Start again</button></p>
-            ) : <p className="mt-6 text-center text-sm text-[#697383]">
+              <p className="mt-6 text-center text-sm text-[#697383] dark:text-[#aab5c8]">Not this sign-in? <button type="button" onClick={restartSignIn} className="font-semibold text-[#db5b45] dark:text-[#ff9b87] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#e65b45]">Start again</button></p>
+            ) : <p className="mt-6 text-center text-sm text-[#697383] dark:text-[#aab5c8]">
               {isRegistering ? "Already have an account?" : "New to VidCircle?"}{" "}
-              <button type="button" onClick={changeMode} className="font-semibold text-[#db5b45] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#e65b45]">
+              <button type="button" onClick={changeMode} className="font-semibold text-[#db5b45] dark:text-[#ff9b87] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#e65b45]">
                 {isRegistering ? "Sign in" : "Create an account"}
               </button>
             </p>}
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs text-[#9aa2ad]">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs text-[#9aa2ad] dark:text-[#aab5c8]">
           <span>© {new Date().getFullYear()} VidCircle</span>
           <span>Local prototype · No external sign-in</span>
         </div>

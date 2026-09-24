@@ -244,7 +244,7 @@ export default function SubscriptionsPage() {
   const accessEnd = subscription?.accessEndsAt ? formatDate(subscription.accessEndsAt) : null;
 
   return (
-    <main className="min-h-screen bg-[#f7f8fb] text-[#172033]">
+    <main className="min-h-screen bg-[#f7f8fb] dark:bg-[#101624] text-[#172033] dark:text-[#e6ecf7]">
       <div className="mx-auto max-w-[1510px] px-5 pb-20 pt-7 sm:px-8 lg:px-10 lg:pt-10">
         <section className={`${styles.hero} relative overflow-hidden rounded-[30px] px-7 py-9 text-white sm:px-10 sm:py-11 lg:px-14`}>
           <div className={styles.heroGlow} aria-hidden="true" />
@@ -288,14 +288,14 @@ export default function SubscriptionsPage() {
 
         {loadState === "loading" && (
           <div className="mt-9 grid gap-5 sm:grid-cols-2 xl:grid-cols-4" aria-label="Loading plans">
-            {[0, 1, 2, 3].map((item) => <div key={item} className="h-[380px] animate-pulse rounded-[26px] bg-[#e8ebf0]" />)}
+            {[0, 1, 2, 3].map((item) => <div key={item} className="h-[380px] animate-pulse rounded-[26px] bg-[#e8ebf0] dark:bg-[#2b374b]" />)}
           </div>
         )}
 
         {loadState === "error" && (
-          <section className="mt-9 rounded-[26px] border border-[#f1d3cc] bg-[#fff8f5] px-6 py-12 text-center">
+          <section className="mt-9 rounded-[26px] border border-[#f1d3cc] dark:border-[#73505a] bg-[#fff8f5] dark:bg-[#43313a] px-6 py-12 text-center">
             <h2 className="text-lg font-semibold">Could not load your membership</h2>
-            <p className="mt-2 text-sm text-[#806d69]">Check that the local API is running, then try again.</p>
+            <p className="mt-2 text-sm text-[#806d69] dark:text-[#aab5c8]">Check that the local API is running, then try again.</p>
             <button type="button" className="mt-5 rounded-xl bg-[#ed6049] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#dd533d]" onClick={reload}>Retry</button>
           </section>
         )}
@@ -305,13 +305,13 @@ export default function SubscriptionsPage() {
             <section className="mt-10" aria-labelledby="plan-heading">
               <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#e16b55]">Choose what suits you</p>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#e16b55] dark:text-[#ff9b87]">Choose what suits you</p>
                   <h2 id="plan-heading" className="mt-1 text-2xl font-semibold tracking-[-0.05em] sm:text-[28px]">Compare memberships</h2>
-                  <p className="mt-1.5 text-sm text-[#7a8494]">Sample prices and local-demo benefits. Downloads and exclusive courses are later builds.</p>
+                  <p className="mt-1.5 text-sm text-[#7a8494] dark:text-[#aab5c8]">Sample prices and local-demo benefits. Downloads and exclusive courses are later builds.</p>
                 </div>
-                <div role="group" aria-label="Billing period" className="inline-flex self-start rounded-2xl border border-[#e7eaf0] bg-white p-1.5 shadow-[0_6px_18px_rgba(23,32,51,0.04)]">
+                <div role="group" aria-label="Billing period" className="inline-flex self-start rounded-2xl border border-[#e7eaf0] dark:border-[#3b465f] bg-white dark:bg-[#202a3d] p-1.5 shadow-[0_6px_18px_rgba(23,32,51,0.04)]">
                   {catalogue.billingCycles.map((cycle) => (
-                    <button key={cycle.id} type="button" aria-pressed={billingCycle === cycle.id} className={`rounded-xl px-3.5 py-2 text-xs font-semibold transition sm:px-4 sm:text-sm ${billingCycle === cycle.id ? "bg-[#172033] text-white shadow-sm" : "text-[#738095] hover:bg-[#f5f6f9] hover:text-[#172033]"}`} onClick={() => setBillingCycle(cycle.id)}>{cycle.label}</button>
+                    <button key={cycle.id} type="button" aria-pressed={billingCycle === cycle.id} className={`rounded-xl px-3.5 py-2 text-xs font-semibold transition sm:px-4 sm:text-sm ${billingCycle === cycle.id ? "bg-[#172033] text-white shadow-sm" : "text-[#738095] dark:text-[#aab5c8] hover:bg-[#f5f6f9] dark:hover:bg-[#263149] hover:text-[#172033] dark:hover:text-[#e6ecf7]"}`} onClick={() => setBillingCycle(cycle.id)}>{cycle.label}</button>
                   ))}
                 </div>
               </div>
@@ -324,27 +324,27 @@ export default function SubscriptionsPage() {
                     <article key={plan.id} className={`${styles.planCard} ${isFeatured ? styles.featuredCard : ""} flex flex-col rounded-[26px] border p-6 sm:p-7`}>
                       <div className="flex items-start justify-between gap-3">
                         <span className={`${styles.planIcon} ${plan.id === "free" ? "" : styles[`icon${plan.name}`]} flex size-11 items-center justify-center rounded-2xl`}><PlanIcon id={plan.id} /></span>
-                        {isCurrent ? <span className="rounded-full bg-[#e8f5ee] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#308262]">Current plan</span> :
-                          isFeatured ? <span className="rounded-full bg-[#fff0ec] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#d45f49]">Most popular</span> : null}
+                        {isCurrent ? <span className="rounded-full bg-[#e8f5ee] dark:bg-[#273d3a] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#308262] dark:text-[#91d7ae]">Current plan</span> :
+                          isFeatured ? <span className="rounded-full bg-[#fff0ec] dark:bg-[#43313a] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#d45f49] dark:text-[#ff9b87]">Most popular</span> : null}
                       </div>
                       <h3 className="mt-6 text-[23px] font-semibold tracking-[-0.05em]">{plan.name}</h3>
-                      <p className="mt-1 min-h-10 text-sm leading-5 text-[#7b8494]">{plan.summary}</p>
+                      <p className="mt-1 min-h-10 text-sm leading-5 text-[#7b8494] dark:text-[#aab5c8]">{plan.summary}</p>
                       <div className="mt-5 flex items-baseline gap-1">
                         <span className="text-[32px] font-semibold tracking-[-0.065em]">{formatRupees(plan.pricesPaise[billingCycle])}</span>
-                        <span className="text-xs text-[#8a93a2]">{plan.id === "free" ? "forever" : billingCycle === "monthly" ? "/mo" : billingCycle === "quarterly" ? "/quarter" : "/year"}</span>
+                        <span className="text-xs text-[#8a93a2] dark:text-[#aab5c8]">{plan.id === "free" ? "forever" : billingCycle === "monthly" ? "/mo" : billingCycle === "quarterly" ? "/quarter" : "/year"}</span>
                       </div>
-                      <p className="mt-1 text-xs text-[#8a93a2]">{plan.id === "free" ? "Always available" : `${activeCycle?.validityDays} days of access · one-time term`}</p>
-                      <div className="my-6 h-px bg-[#edf0f4]" />
-                      <ul className="flex-1 space-y-3.5 text-sm text-[#586579]">
-                        <li className="flex gap-2.5"><Check className="mt-0.5 size-4 shrink-0 text-[#df705a]" aria-hidden="true" /> Up to {plan.features.maxQuality} video</li>
-                        <li className="flex gap-2.5"><Clock3 className="mt-0.5 size-4 shrink-0 text-[#df705a]" aria-hidden="true" /> {formatWatchLimit(plan.features.dailyWatchMinutes)}</li>
-                        <li className="flex gap-2.5"><Download className="mt-0.5 size-4 shrink-0 text-[#df705a]" aria-hidden="true" /> {plan.features.dailyDownloads} {plan.features.dailyDownloads === 1 ? "download" : "downloads"} / day</li>
-                        <li className="flex gap-2.5"><Sparkles className="mt-0.5 size-4 shrink-0 text-[#df705a]" aria-hidden="true" /> {plan.features.premiumAccess}</li>
+                      <p className="mt-1 text-xs text-[#8a93a2] dark:text-[#aab5c8]">{plan.id === "free" ? "Always available" : `${activeCycle?.validityDays} days of access · one-time term`}</p>
+                      <div className="my-6 h-px bg-[#edf0f4] dark:bg-[#263149]" />
+                      <ul className="flex-1 space-y-3.5 text-sm text-[#586579] dark:text-[#e6ecf7]">
+                        <li className="flex gap-2.5"><Check className="mt-0.5 size-4 shrink-0 text-[#df705a] dark:text-[#ff9b87]" aria-hidden="true" /> Up to {plan.features.maxQuality} video</li>
+                        <li className="flex gap-2.5"><Clock3 className="mt-0.5 size-4 shrink-0 text-[#df705a] dark:text-[#ff9b87]" aria-hidden="true" /> {formatWatchLimit(plan.features.dailyWatchMinutes)}</li>
+                        <li className="flex gap-2.5"><Download className="mt-0.5 size-4 shrink-0 text-[#df705a] dark:text-[#ff9b87]" aria-hidden="true" /> {plan.features.dailyDownloads} {plan.features.dailyDownloads === 1 ? "download" : "downloads"} / day</li>
+                        <li className="flex gap-2.5"><Sparkles className="mt-0.5 size-4 shrink-0 text-[#df705a] dark:text-[#ff9b87]" aria-hidden="true" /> {plan.features.premiumAccess}</li>
                       </ul>
                       {plan.id === "free" ? (
-                        <div className="mt-8 flex h-11 items-center justify-center rounded-xl border border-[#dce8e1] bg-[#f4faf6] text-sm font-semibold text-[#418064]">{isCurrent ? "Your current plan" : "Available after expiry"}</div>
+                        <div className="mt-8 flex h-11 items-center justify-center rounded-xl border border-[#dce8e1] dark:border-[#49685a] bg-[#f4faf6] dark:bg-[#273d3a] text-sm font-semibold text-[#418064] dark:text-[#91d7ae]">{isCurrent ? "Your current plan" : "Available after expiry"}</div>
                       ) : subscription.scheduledChange ? (
-                        <div className="mt-8 flex h-11 items-center justify-center rounded-xl border border-dashed border-[#d8dde5] bg-[#f8f9fb] text-sm font-semibold text-[#7e899b]">Change already scheduled</div>
+                        <div className="mt-8 flex h-11 items-center justify-center rounded-xl border border-dashed border-[#d8dde5] dark:border-[#3b465f] bg-[#f8f9fb] dark:bg-[#263149] text-sm font-semibold text-[#7e899b] dark:text-[#aab5c8]">Change already scheduled</div>
                       ) : (
                         <button type="button" className="mt-8 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#ed6049] text-sm font-semibold text-white transition hover:bg-[#d9503a] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ed6049]" onClick={() => choosePlan(plan.id as PaidPlanId, billingCycle)}>
                           {subscription.status !== "active" ? "Try local checkout" : isCurrent ? "Renew plan" : catalogue.plans.findIndex((item) => item.id === plan.id) > currentRank ? "Upgrade plan" : "Schedule downgrade"} <ArrowRight className="size-4" aria-hidden="true" />
@@ -354,24 +354,24 @@ export default function SubscriptionsPage() {
                   );
                 })}
               </div>
-              <p className="mt-4 text-xs leading-5 text-[#8790a0]">{catalogue.pricingNote} Source-resolution access, a once-per-video daily clip allowance, Gold early access and a local ad placeholder work now. Selectable video quality, exact playback-time metering, downloads and courses are later builds.</p>
+              <p className="mt-4 text-xs leading-5 text-[#8790a0] dark:text-[#aab5c8]">{catalogue.pricingNote} Source-resolution access, a once-per-video daily clip allowance, Gold early access and a local ad placeholder work now. Selectable video quality, exact playback-time metering, downloads and courses are later builds.</p>
             </section>
 
             {subscription.status === "active" && (
-              <section className="mt-8 flex flex-col gap-5 rounded-[24px] border border-[#e5e9ef] bg-white p-6 shadow-[0_8px_24px_rgba(23,32,51,0.025)] sm:flex-row sm:items-center sm:justify-between sm:p-7" aria-label="Manage current term">
+              <section className="mt-8 flex flex-col gap-5 rounded-[24px] border border-[#e5e9ef] dark:border-[#3b465f] bg-white dark:bg-[#202a3d] p-6 shadow-[0_8px_24px_rgba(23,32,51,0.025)] sm:flex-row sm:items-center sm:justify-between sm:p-7" aria-label="Manage current term">
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#e16b55]">Current term</p>
-                  <h2 className="mt-1 text-lg font-semibold text-[#263148]">{activePlan?.name} · {subscription.remainingDays} days remaining</h2>
-                  <p className="mt-1.5 text-sm leading-6 text-[#768295]">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#e16b55] dark:text-[#ff9b87]">Current term</p>
+                  <h2 className="mt-1 text-lg font-semibold text-[#263148] dark:text-[#e6ecf7]">{activePlan?.name} · {subscription.remainingDays} days remaining</h2>
+                  <p className="mt-1.5 text-sm leading-6 text-[#768295] dark:text-[#aab5c8]">
                     {subscription.scheduledChange
                       ? `${scheduledPlan?.name || subscription.scheduledChange.planId} begins ${formatDate(subscription.scheduledChange.startsAt)} and runs until ${formatDate(subscription.scheduledChange.expiresAt)}.`
                       : `Current access ends ${expiry}. Renew manually; there are no automatic charges.`}
                   </p>
-                  {subscription.cancelAtPeriodEnd && <p className="mt-2 text-xs font-semibold text-[#a45c4b]">Cancellation scheduled after the last prepaid term on {accessEnd}.</p>}
-                  {accountMessage && <p role="status" className="mt-2 text-xs text-[#a45c4b]">{accountMessage}</p>}
+                  {subscription.cancelAtPeriodEnd && <p className="mt-2 text-xs font-semibold text-[#a45c4b] dark:text-[#ff9b87]">Cancellation scheduled after the last prepaid term on {accessEnd}.</p>}
+                  {accountMessage && <p role="status" className="mt-2 text-xs text-[#a45c4b] dark:text-[#ff9b87]">{accountMessage}</p>}
                 </div>
                 {!subscription.cancelAtPeriodEnd && (
-                  <button type="button" disabled={accountBusy} className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-[#e7d8d3] bg-[#fff9f7] px-4 text-sm font-semibold text-[#a45c4b] hover:bg-[#fff0ea] disabled:opacity-50" onClick={cancelAtTermEnd}>
+                  <button type="button" disabled={accountBusy} className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-[#e7d8d3] dark:border-[#73505a] bg-[#fff9f7] dark:bg-[#43313a] px-4 text-sm font-semibold text-[#a45c4b] dark:text-[#ff9b87] hover:bg-[#fff0ea] dark:hover:bg-[#43313a] disabled:opacity-50" onClick={cancelAtTermEnd}>
                     {accountBusy ? "Scheduling…" : "Cancel at term end"}
                   </button>
                 )}
@@ -379,35 +379,35 @@ export default function SubscriptionsPage() {
             )}
 
             <section id="local-checkout" className="mt-11 grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]" aria-labelledby="checkout-heading">
-              <div className="rounded-[26px] border border-[#e7eaf0] bg-white p-6 shadow-[0_8px_26px_rgba(23,32,51,0.035)] sm:p-8">
+              <div className="rounded-[26px] border border-[#e7eaf0] dark:border-[#3b465f] bg-white dark:bg-[#202a3d] p-6 shadow-[0_8px_26px_rgba(23,32,51,0.035)] sm:p-8">
                 <div className="flex items-start gap-4">
-                  <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[#fff0ec] text-[#de6b54]"><CreditCard className="size-5" aria-hidden="true" /></span>
+                  <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[#fff0ec] dark:bg-[#43313a] text-[#de6b54] dark:text-[#ff9b87]"><CreditCard className="size-5" aria-hidden="true" /></span>
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#e16b55]">Safe local demo</p>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#e16b55] dark:text-[#ff9b87]">Safe local demo</p>
                     <h2 id="checkout-heading" className="mt-1 text-2xl font-semibold tracking-[-0.05em]">Test checkout</h2>
                   </div>
                 </div>
-                <p className="mt-5 text-sm leading-6 text-[#6e798b]">Buy, renew or change a paid plan with a server-priced test order. Choose a simulated result; no payment provider is contacted.</p>
+                <p className="mt-5 text-sm leading-6 text-[#6e798b] dark:text-[#aab5c8]">Buy, renew or change a paid plan with a server-priced test order. Choose a simulated result; no payment provider is contacted.</p>
                 {selection && selectedPlan ? (
-                  <div className="mt-6 rounded-2xl border border-[#e9ecf1] bg-[#fafbfc] p-5">
+                  <div className="mt-6 rounded-2xl border border-[#e9ecf1] dark:border-[#3b465f] bg-[#fafbfc] dark:bg-[#263149] p-5">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#8a94a3]">Selected membership</p>
-                        <p className="mt-1 text-lg font-semibold text-[#253047]">{selectedPlan.name} · {selectedCycle?.label}</p>
-                        <p className="mt-1 text-xs text-[#828d9e]">{selectedCycle?.validityDays} days · one-time local term</p>
-                        <p className="mt-2 text-xs font-semibold text-[#bc6956]">{intentLabel[effectiveIntent]}: {effectiveIntent === "renewal" ? "extends from current expiry" : effectiveIntent === "downgrade" ? "prepaid term starts after current expiry" : effectiveIntent === "upgrade" ? "starts now; unused time is not prorated" : "starts after verified test success"}.</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#8a94a3] dark:text-[#aab5c8]">Selected membership</p>
+                        <p className="mt-1 text-lg font-semibold text-[#253047] dark:text-[#e6ecf7]">{selectedPlan.name} · {selectedCycle?.label}</p>
+                        <p className="mt-1 text-xs text-[#828d9e] dark:text-[#aab5c8]">{selectedCycle?.validityDays} days · one-time local term</p>
+                        <p className="mt-2 text-xs font-semibold text-[#bc6956] dark:text-[#ff9b87]">{intentLabel[effectiveIntent]}: {effectiveIntent === "renewal" ? "extends from current expiry" : effectiveIntent === "downgrade" ? "prepaid term starts after current expiry" : effectiveIntent === "upgrade" ? "starts now; unused time is not prorated" : "starts after verified test success"}.</p>
                       </div>
-                      <p className="text-xl font-semibold text-[#253047]">{formatRupees(selectedPlan.pricesPaise[selection.billingCycle])}</p>
+                      <p className="text-xl font-semibold text-[#253047] dark:text-[#e6ecf7]">{formatRupees(selectedPlan.pricesPaise[selection.billingCycle])}</p>
                     </div>
                     {!checkoutOrder ? (
                       <button type="button" disabled={checkoutBusy || Boolean(subscription.scheduledChange)} className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#172033] px-5 text-sm font-semibold text-white hover:bg-[#2a3650] disabled:cursor-not-allowed disabled:opacity-50" onClick={beginCheckout}>
                         {checkoutBusy ? "Creating order…" : "Create local test order"} <ArrowRight className="size-4" aria-hidden="true" />
                       </button>
                     ) : (
-                      <div className="mt-5 border-t border-[#e6e9ee] pt-5">
+                      <div className="mt-5 border-t border-[#e6e9ee] dark:border-[#3b465f] pt-5">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className={`${styles.statusBadge} ${styles[`status${checkoutOrder.status}`]}`}>{checkoutOrder.status}</span>
-                          <span className="text-xs text-[#8993a2]">Order {checkoutOrder.orderId.slice(-8).toUpperCase()}</span>
+                          <span className="text-xs text-[#8993a2] dark:text-[#aab5c8]">Order {checkoutOrder.orderId.slice(-8).toUpperCase()}</span>
                         </div>
                         {checkoutOrder.status === "pending" && !checkoutOrder.simulatedResult && (
                           <div className="mt-4 flex flex-wrap gap-2.5" aria-label="Choose local payment outcome">
@@ -420,119 +420,119 @@ export default function SubscriptionsPage() {
                         )}
                         {(checkoutOrder.status === "pending" || checkoutOrder.status === "processing") && checkoutOrder.simulatedResult && (
                           <div className="mt-4">
-                            <p className="text-sm text-[#657186]">A {checkoutOrder.simulatedResult.outcome} result was issued. Verify the same result to finish this order.</p>
+                            <p className="text-sm text-[#657186] dark:text-[#aab5c8]">A {checkoutOrder.simulatedResult.outcome} result was issued. Verify the same result to finish this order.</p>
                             <button type="button" disabled={checkoutBusy} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#172033] px-5 text-sm font-semibold text-white hover:bg-[#2a3650] disabled:opacity-50" onClick={retryVerification}>
                               <RotateCcw className="size-4" aria-hidden="true" /> {checkoutBusy ? "Verifying…" : "Retry verification"}
                             </button>
                           </div>
                         )}
-                        {checkoutOrder.status === "paid" && <p className="mt-4 text-sm font-medium text-[#2f8060]">Local result verified. {checkoutOrder.intent === "downgrade" ? `${selectedPlan.name} starts ${checkoutOrder.termStartsAt ? formatDate(checkoutOrder.termStartsAt) : "at the end of your term"}.` : checkoutOrder.intent === "renewal" ? `Access extended until ${checkoutOrder.termExpiresAt ? formatDate(checkoutOrder.termExpiresAt) : "your new expiry"}.` : `${selectedPlan.name} is active now.`}</p>}
-                        {checkoutOrder.status === "failed" && <p className="mt-4 text-sm font-medium text-[#a75b4c]">Test payment failed. Your membership was not changed.</p>}
-                        {checkoutOrder.status === "cancelled" && <p className="mt-4 text-sm font-medium text-[#68758a]">Test payment cancelled. Your membership was not changed.</p>}
+                        {checkoutOrder.status === "paid" && <p className="mt-4 text-sm font-medium text-[#2f8060] dark:text-[#91d7ae]">Local result verified. {checkoutOrder.intent === "downgrade" ? `${selectedPlan.name} starts ${checkoutOrder.termStartsAt ? formatDate(checkoutOrder.termStartsAt) : "at the end of your term"}.` : checkoutOrder.intent === "renewal" ? `Access extended until ${checkoutOrder.termExpiresAt ? formatDate(checkoutOrder.termExpiresAt) : "your new expiry"}.` : `${selectedPlan.name} is active now.`}</p>}
+                        {checkoutOrder.status === "failed" && <p className="mt-4 text-sm font-medium text-[#a75b4c] dark:text-[#ff9b87]">Test payment failed. Your membership was not changed.</p>}
+                        {checkoutOrder.status === "cancelled" && <p className="mt-4 text-sm font-medium text-[#68758a] dark:text-[#aab5c8]">Test payment cancelled. Your membership was not changed.</p>}
                         {(checkoutOrder.status === "failed" || checkoutOrder.status === "cancelled") && !subscription.scheduledChange && (
-                          <button type="button" className="mt-3 inline-flex min-h-10 items-center gap-2 text-xs font-semibold text-[#d35f49] hover:underline" onClick={() => { setCheckoutOrder(null); checkoutKey.current = null; setCheckoutError(null); }}>
+                          <button type="button" className="mt-3 inline-flex min-h-10 items-center gap-2 text-xs font-semibold text-[#d35f49] dark:text-[#ff9b87] hover:underline" onClick={() => { setCheckoutOrder(null); checkoutKey.current = null; setCheckoutError(null); }}>
                             <RotateCcw className="size-4" aria-hidden="true" /> Try another test order
                           </button>
                         )}
-                        {checkoutOrder.status === "processing" && <p className="mt-3 text-xs text-[#7a8494]">The server is processing this result. A retry is safe.</p>}
-                        {checkoutOrder.invoiceNumber && <p className="mt-2 text-xs text-[#7a8494]">Reference: {checkoutOrder.invoiceNumber}</p>}
+                        {checkoutOrder.status === "processing" && <p className="mt-3 text-xs text-[#7a8494] dark:text-[#aab5c8]">The server is processing this result. A retry is safe.</p>}
+                        {checkoutOrder.invoiceNumber && <p className="mt-2 text-xs text-[#7a8494] dark:text-[#aab5c8]">Reference: {checkoutOrder.invoiceNumber}</p>}
                       </div>
                     )}
                   </div>
                 ) : (
-                  <div className="mt-6 rounded-2xl border border-dashed border-[#dce1e9] bg-[#fafbfc] px-5 py-7 text-sm text-[#8993a2]">Select Bronze, Silver or Gold to begin.</div>
+                  <div className="mt-6 rounded-2xl border border-dashed border-[#dce1e9] dark:border-[#3b465f] bg-[#fafbfc] dark:bg-[#263149] px-5 py-7 text-sm text-[#8993a2] dark:text-[#aab5c8]">Select Bronze, Silver or Gold to begin.</div>
                 )}
-                {checkoutError && <p role="alert" className="mt-4 rounded-xl border border-[#f0c9be] bg-[#fff5f1] px-4 py-3 text-sm text-[#a65040]">{checkoutError}</p>}
+                {checkoutError && <p role="alert" className="mt-4 rounded-xl border border-[#f0c9be] dark:border-[#73505a] bg-[#fff5f1] dark:bg-[#43313a] px-4 py-3 text-sm text-[#a65040] dark:text-[#ff9b87]">{checkoutError}</p>}
               </div>
 
-              <div className="rounded-[26px] border border-[#e7eaf0] bg-white p-6 shadow-[0_8px_26px_rgba(23,32,51,0.035)] sm:p-8">
+              <div className="rounded-[26px] border border-[#e7eaf0] dark:border-[#3b465f] bg-white dark:bg-[#202a3d] p-6 shadow-[0_8px_26px_rgba(23,32,51,0.035)] sm:p-8">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#e16b55]">Your account</p>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#e16b55] dark:text-[#ff9b87]">Your account</p>
                     <h2 className="mt-1 text-2xl font-semibold tracking-[-0.05em]">Payment history</h2>
                   </div>
-                  <span className="rounded-full bg-[#f2f4f8] px-3 py-1 text-xs font-semibold text-[#707d90]">Local only</span>
+                  <span className="rounded-full bg-[#f2f4f8] dark:bg-[#263149] px-3 py-1 text-xs font-semibold text-[#707d90] dark:text-[#aab5c8]">Local only</span>
                 </div>
                 {orders.length === 0 ? (
-                  <p className="mt-6 rounded-2xl bg-[#fafbfc] px-5 py-8 text-sm text-[#8993a2]">Your local test orders will appear here.</p>
+                  <p className="mt-6 rounded-2xl bg-[#fafbfc] dark:bg-[#263149] px-5 py-8 text-sm text-[#8993a2] dark:text-[#aab5c8]">Your local test orders will appear here.</p>
                 ) : (
                   <ol className="mt-5 max-h-[430px] space-y-3 overflow-y-auto pr-1">
                     {orders.map((order) => (
-                      <li key={order.orderId} className="rounded-2xl border border-[#edf0f3] p-4">
+                      <li key={order.orderId} className="rounded-2xl border border-[#edf0f3] dark:border-[#3b465f] p-4">
                         <div className="flex flex-wrap items-start justify-between gap-2">
                           <div>
-                            <p className="text-sm font-semibold capitalize text-[#2b3549]">{order.planId} · {order.billingCycle}</p>
-                            <p className="mt-0.5 text-xs font-medium text-[#bc6956]">{intentLabel[order.intent]}</p>
-                            <p className="mt-1 text-xs text-[#8b95a4]">{formatDate(order.createdAt)} · {order.orderId.slice(-8).toUpperCase()}</p>
+                            <p className="text-sm font-semibold capitalize text-[#2b3549] dark:text-[#e6ecf7]">{order.planId} · {order.billingCycle}</p>
+                            <p className="mt-0.5 text-xs font-medium text-[#bc6956] dark:text-[#ff9b87]">{intentLabel[order.intent]}</p>
+                            <p className="mt-1 text-xs text-[#8b95a4] dark:text-[#aab5c8]">{formatDate(order.createdAt)} · {order.orderId.slice(-8).toUpperCase()}</p>
                           </div>
-                          <p className="text-sm font-semibold text-[#2b3549]">{formatRupees(order.amountPaise)}</p>
+                          <p className="text-sm font-semibold text-[#2b3549] dark:text-[#e6ecf7]">{formatRupees(order.amountPaise)}</p>
                         </div>
                         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                           <span className={`${styles.statusBadge} ${styles[`status${order.status}`]}`}>{order.status}</span>
-                          {(order.status === "pending" || order.status === "processing") && <button type="button" className="text-xs font-semibold text-[#d8614c] hover:underline" onClick={() => resumeOrder(order)}>Resume test</button>}
-                          {order.status === "paid" && <button type="button" className="text-xs font-semibold text-[#d8614c] hover:underline" onClick={() => viewReceipt(order)}>View test receipt</button>}
+                          {(order.status === "pending" || order.status === "processing") && <button type="button" className="text-xs font-semibold text-[#d8614c] dark:text-[#ff9b87] hover:underline" onClick={() => resumeOrder(order)}>Resume test</button>}
+                          {order.status === "paid" && <button type="button" className="text-xs font-semibold text-[#d8614c] dark:text-[#ff9b87] hover:underline" onClick={() => viewReceipt(order)}>View test receipt</button>}
                         </div>
-                        {order.invoiceNumber && <p className="mt-2 text-xs text-[#8590a0]">Reference: {order.invoiceNumber}</p>}
-                        {order.status === "paid" && <p className="mt-1 text-xs text-[#8590a0]">Email: {order.receiptStatus === "sent" ? "captured by local inbox" : "waiting for local inbox"}</p>}
+                        {order.invoiceNumber && <p className="mt-2 text-xs text-[#8590a0] dark:text-[#aab5c8]">Reference: {order.invoiceNumber}</p>}
+                        {order.status === "paid" && <p className="mt-1 text-xs text-[#8590a0] dark:text-[#aab5c8]">Email: {order.receiptStatus === "sent" ? "captured by local inbox" : "waiting for local inbox"}</p>}
                       </li>
                     ))}
                   </ol>
                 )}
                 {receipt && (
-                  <div className="mt-5 rounded-2xl border border-[#efd8d1] bg-[#fffaf7] p-5" aria-label="Local test receipt">
+                  <div className="mt-5 rounded-2xl border border-[#efd8d1] dark:border-[#73505a] bg-[#fffaf7] dark:bg-[#43313a] p-5" aria-label="Local test receipt">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#bc6956]">Local test receipt</p>
-                        <h3 className="mt-1 text-base font-semibold text-[#263148]">{receipt.planName} · {receipt.billingCycle}</h3>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#bc6956] dark:text-[#ff9b87]">Local test receipt</p>
+                        <h3 className="mt-1 text-base font-semibold text-[#263148] dark:text-[#e6ecf7]">{receipt.planName} · {receipt.billingCycle}</h3>
                       </div>
-                      <p className="text-lg font-semibold text-[#263148]">{formatRupees(receipt.amountPaise)}</p>
+                      <p className="text-lg font-semibold text-[#263148] dark:text-[#e6ecf7]">{formatRupees(receipt.amountPaise)}</p>
                     </div>
-                    <dl className="mt-4 grid gap-2 text-xs text-[#687588] sm:grid-cols-2">
-                      <div><dt className="font-semibold text-[#344056]">Reference</dt><dd className="mt-0.5 break-all">{receipt.reference}</dd></div>
-                      <div><dt className="font-semibold text-[#344056]">Test payment</dt><dd className="mt-0.5 break-all">{receipt.paymentId}</dd></div>
-                      <div><dt className="font-semibold text-[#344056]">Term</dt><dd className="mt-0.5">{receipt.termStartsAt && receipt.termExpiresAt ? `${formatDate(receipt.termStartsAt)} – ${formatDate(receipt.termExpiresAt)}` : "See membership status"}</dd></div>
-                      <div><dt className="font-semibold text-[#344056]">Recipient</dt><dd className="mt-0.5 break-all">{receipt.recipient}</dd></div>
+                    <dl className="mt-4 grid gap-2 text-xs text-[#687588] dark:text-[#aab5c8] sm:grid-cols-2">
+                      <div><dt className="font-semibold text-[#344056] dark:text-[#e6ecf7]">Reference</dt><dd className="mt-0.5 break-all">{receipt.reference}</dd></div>
+                      <div><dt className="font-semibold text-[#344056] dark:text-[#e6ecf7]">Test payment</dt><dd className="mt-0.5 break-all">{receipt.paymentId}</dd></div>
+                      <div><dt className="font-semibold text-[#344056] dark:text-[#e6ecf7]">Term</dt><dd className="mt-0.5">{receipt.termStartsAt && receipt.termExpiresAt ? `${formatDate(receipt.termStartsAt)} – ${formatDate(receipt.termExpiresAt)}` : "See membership status"}</dd></div>
+                      <div><dt className="font-semibold text-[#344056] dark:text-[#e6ecf7]">Recipient</dt><dd className="mt-0.5 break-all">{receipt.recipient}</dd></div>
                     </dl>
-                    <p className="mt-4 text-xs leading-5 text-[#8a776f]">{receipt.notice}</p>
+                    <p className="mt-4 text-xs leading-5 text-[#8a776f] dark:text-[#aab5c8]">{receipt.notice}</p>
                     <div className="mt-3 flex flex-wrap items-center gap-3">
                       <span className={`${styles.statusBadge} ${receipt.emailStatus === "sent" ? styles.statuspaid : styles.statuspending}`}>{receipt.emailStatus === "sent" ? "Mailpit delivery sent" : receipt.emailStatus === "sending" ? "Sending to Mailpit" : receipt.emailStatus === "pending" ? "Waiting for local inbox" : "Mailpit unavailable"}</span>
-                      {receipt.emailStatus !== "sent" && <button type="button" disabled={receiptBusy} className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#d8614c] hover:underline disabled:opacity-50" onClick={resendReceipt}><Mail className="size-4" aria-hidden="true" /> {receiptBusy ? "Retrying…" : "Retry local email"}</button>}
+                      {receipt.emailStatus !== "sent" && <button type="button" disabled={receiptBusy} className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#d8614c] dark:text-[#ff9b87] hover:underline disabled:opacity-50" onClick={resendReceipt}><Mail className="size-4" aria-hidden="true" /> {receiptBusy ? "Retrying…" : "Retry local email"}</button>}
                     </div>
                   </div>
                 )}
-                {receiptError && <p role="alert" className="mt-3 text-xs text-[#b45b49]">{receiptError}</p>}
+                {receiptError && <p role="alert" className="mt-3 text-xs text-[#b45b49] dark:text-[#ff9b87]">{receiptError}</p>}
               </div>
             </section>
 
             <section className="mt-12" aria-labelledby="features-heading">
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#e16b55]">The details</p>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#e16b55] dark:text-[#ff9b87]">The details</p>
                   <h2 id="features-heading" className="mt-1 text-2xl font-semibold tracking-[-0.05em]">Feature comparison</h2>
                 </div>
-                <span className="rounded-full bg-[#fff0ec] px-3 py-1.5 text-xs font-semibold text-[#c66450]">Planned entitlements</span>
+                <span className="rounded-full bg-[#fff0ec] dark:bg-[#43313a] px-3 py-1.5 text-xs font-semibold text-[#c66450] dark:text-[#ff9b87]">Planned entitlements</span>
               </div>
-              <div className="mt-5 overflow-x-auto rounded-[24px] border border-[#e7eaf0] bg-white shadow-[0_8px_24px_rgba(23,32,51,0.025)]">
+              <div className="mt-5 overflow-x-auto rounded-[24px] border border-[#e7eaf0] dark:border-[#3b465f] bg-white dark:bg-[#202a3d] shadow-[0_8px_24px_rgba(23,32,51,0.025)]">
                 <table className="w-full min-w-[710px] border-collapse text-left text-sm">
-                  <thead><tr className="border-b border-[#e8ebf0] bg-[#fafbfc]">
-                    <th scope="col" className="w-[27%] px-6 py-4 font-semibold text-[#687487]">Feature</th>
-                    {catalogue.plans.map((plan) => <th key={plan.id} scope="col" className="px-4 py-4 font-semibold text-[#273249]">{plan.name}</th>)}
+                  <thead><tr className="border-b border-[#e8ebf0] dark:border-[#3b465f] bg-[#fafbfc] dark:bg-[#263149]">
+                    <th scope="col" className="w-[27%] px-6 py-4 font-semibold text-[#687487] dark:text-[#aab5c8]">Feature</th>
+                    {catalogue.plans.map((plan) => <th key={plan.id} scope="col" className="px-4 py-4 font-semibold text-[#273249] dark:text-[#e6ecf7]">{plan.name}</th>)}
                   </tr></thead>
                   <tbody>{comparisonRows.map((row) => (
-                    <tr key={row.label} className="border-b border-[#eef0f4] last:border-0">
-                      <th scope="row" className="px-6 py-4 font-medium text-[#687487]">{row.label}</th>
-                      {catalogue.plans.map((plan) => <td key={plan.id} className="px-4 py-4 text-[#2f3a4f]">{row.value(plan)}</td>)}
+                    <tr key={row.label} className="border-b border-[#eef0f4] dark:border-[#3b465f] last:border-0">
+                      <th scope="row" className="px-6 py-4 font-medium text-[#687487] dark:text-[#aab5c8]">{row.label}</th>
+                      {catalogue.plans.map((plan) => <td key={plan.id} className="px-4 py-4 text-[#2f3a4f] dark:text-[#e6ecf7]">{row.value(plan)}</td>)}
                     </tr>
                   ))}</tbody>
                 </table>
               </div>
             </section>
 
-            <section className="mt-9 grid gap-4 rounded-[24px] border border-[#e8ebf0] bg-white p-6 sm:grid-cols-[auto_1fr] sm:items-start sm:p-7">
-              <div className="flex size-11 items-center justify-center rounded-2xl bg-[#f3f0ff] text-[#7966ac]"><ShieldCheck className="size-5" aria-hidden="true" /></div>
+            <section className="mt-9 grid gap-4 rounded-[24px] border border-[#e8ebf0] dark:border-[#3b465f] bg-white dark:bg-[#202a3d] p-6 sm:grid-cols-[auto_1fr] sm:items-start sm:p-7">
+              <div className="flex size-11 items-center justify-center rounded-2xl bg-[#f3f0ff] dark:bg-[#35314b] text-[#7966ac] dark:text-[#c9baff]"><ShieldCheck className="size-5" aria-hidden="true" /></div>
               <div>
                 <h2 className="text-base font-semibold">Simple local membership rules</h2>
-                <p className="mt-1.5 max-w-[920px] text-sm leading-6 text-[#737e90]">A verified renewal extends the current expiry. Upgrades start immediately without prorating unused time. A verified downgrade is prepaid and begins at the end of the current term. Cancellation ends access after all prepaid terms. Nothing renews or charges automatically.</p>
+                <p className="mt-1.5 max-w-[920px] text-sm leading-6 text-[#737e90] dark:text-[#aab5c8]">A verified renewal extends the current expiry. Upgrades start immediately without prorating unused time. A verified downgrade is prepaid and begins at the end of the current term. Cancellation ends access after all prepaid terms. Nothing renews or charges automatically.</p>
               </div>
             </section>
           </>

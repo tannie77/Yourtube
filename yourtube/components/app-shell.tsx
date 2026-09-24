@@ -19,7 +19,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   if (loading || !user) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#faf9f7] text-sm text-[#687181]">
+      <main className="flex min-h-screen items-center justify-center bg-[#faf9f7] dark:bg-[#101624] text-sm text-[#687181] dark:text-[#aab5c8]">
         Opening VidCircle…
       </main>
     );
