@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, Check, CircleCheck, CircleX, Clock3, CreditCard, Crown, Download, Mail, Play, RotateCcw, ShieldCheck, Sparkles, Tv2 } from "lucide-react";
-import WorkspaceTopbar from "@/components/workspace-topbar";
 import axiosInstance from "@/lib/axiosinstance";
 import { useUser } from "@/lib/AuthContent";
+import { announceSubscriptionUpdated } from "@/lib/subscription-events";
 import {
   formatRupees,
   formatWatchLimit,
@@ -114,6 +114,7 @@ export default function SubscriptionsPage() {
     ]);
     setSubscription(currentResponse.data);
     setOrders(ordersResponse.data.orders);
+    announceSubscriptionUpdated();
   };
 
   const viewReceipt = async (order: CheckoutOrder) => {
@@ -148,6 +149,7 @@ export default function SubscriptionsPage() {
     try {
       const response = await axiosInstance.post<SubscriptionSnapshot>("/subscriptions/me/cancel");
       setSubscription(response.data);
+      announceSubscriptionUpdated();
       setAccountMessage("Cancellation scheduled. Your prepaid access stays available until the shown end date.");
     } catch (error) {
       setAccountMessage(errorMessage(error, "Could not schedule cancellation."));
@@ -244,7 +246,6 @@ export default function SubscriptionsPage() {
 
   return (
     <main className="min-h-screen bg-[#f7f8fb] text-[#172033]">
-      <WorkspaceTopbar section="Membership" />
       <div className="mx-auto max-w-[1510px] px-5 pb-20 pt-7 sm:px-8 lg:px-10 lg:pt-10">
         <section className={`${styles.hero} relative overflow-hidden rounded-[30px] px-7 py-9 text-white sm:px-10 sm:py-11 lg:px-14`}>
           <div className={styles.heroGlow} aria-hidden="true" />

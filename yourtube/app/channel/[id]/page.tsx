@@ -7,7 +7,6 @@ import { ArrowRight, Film, Pencil, Sparkles } from "lucide-react";
 import ChannelDialogue from "@/components/channeldialgoue";
 import LocalVideoCard from "@/components/local-video-card";
 import VideoUploader from "@/components/VideoUploader";
-import WorkspaceTopbar from "@/components/workspace-topbar";
 import axiosInstance from "@/lib/axiosinstance";
 import { useUser } from "@/lib/AuthContent";
 import type { LocalVideo } from "@/lib/local-video";
@@ -38,12 +37,11 @@ export default function ChannelPage() {
 
   if (loading) return <main className="flex min-h-screen items-center justify-center bg-[#f7f8fb] text-sm text-[#7d8797]">Opening your channel…</main>;
   if (!isOwner) {
-    return <main className="min-h-screen bg-[#f7f8fb] text-[#172033]"><WorkspaceTopbar section="Channel studio" /><div className="mx-auto max-w-3xl px-5 py-20 text-center"><h1 className="text-2xl font-semibold">This channel is not available</h1><p className="mt-2 text-sm text-[#7d8797]">You can manage only your own channel in this local prototype.</p><Link href="/dashboard" className="mt-5 inline-flex text-sm font-semibold text-[#dd604b] hover:underline">Back to dashboard</Link></div></main>;
+    return <main className="min-h-screen bg-[#f7f8fb] text-[#172033]"><div className="mx-auto max-w-3xl px-5 py-20 text-center"><h1 className="text-2xl font-semibold">This channel is not available</h1><p className="mt-2 text-sm text-[#7d8797]">You can manage only your own channel in this local prototype.</p><Link href="/dashboard" className="mt-5 inline-flex text-sm font-semibold text-[#dd604b] hover:underline">Back to dashboard</Link></div></main>;
   }
 
   return (
     <main className="min-h-screen bg-[#f7f8fb] text-[#172033] [font-family:'Avenir_Next',Avenir,'Segoe_UI',ui-sans-serif,system-ui,sans-serif]">
-      <WorkspaceTopbar section="Channel studio" />
       <div className="mx-auto max-w-[1510px] space-y-7 px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
         <section className="relative overflow-hidden rounded-[28px] px-7 py-8 text-white sm:px-10 sm:py-10" style={{ background: "radial-gradient(circle at 82% 15%, rgba(239,151,135,.28), transparent 32%), radial-gradient(circle at 55% 110%, rgba(133,103,180,.3), transparent 50%), #171b30" }}>
           <div className="pointer-events-none absolute -right-10 -bottom-28 size-80 rounded-full border border-white/10 shadow-[0_0_0_46px_rgba(255,255,255,.035),0_0_0_96px_rgba(255,255,255,.02)]" aria-hidden="true" />

@@ -116,37 +116,6 @@
   transform: rotate(4deg);
 }
 
-.emptyArt {
-  position: relative;
-  width: 130px;
-  height: 95px;
-}
-
-.emptyBack {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 100px;
-  height: 70px;
-  border-radius: 16px;
-  background: #f4d8d1;
-  transform: rotate(11deg);
-}
-
-.emptyFront {
-  position: absolute;
-  bottom: 5px;
-  left: 5px;
-  display: grid;
-  width: 104px;
-  height: 72px;
-  place-items: center;
-  border-radius: 17px;
-  background: linear-gradient(145deg, #ea8e7e, #e35e56);
-  box-shadow: 0 15px 25px rgba(225, 99, 81, 0.2);
-  transform: rotate(-8deg);
-}
-
 @media (max-width: 1199px) {
   .heroArtwork {
     display: none;

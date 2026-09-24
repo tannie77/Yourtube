@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "db": "node scripts/local-db.js",
+    "translation": "bash scripts/start-translation.sh",
     "dev": "nodemon index.js",
     "start": "node index.js",
     "test": "node --test"

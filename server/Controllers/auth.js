@@ -2,12 +2,31 @@ import mongoose from "mongoose";
 import User from "../Modals/Auth.js";
 import { hashPassword, verifyPassword } from "../security/password.js";
 import { clearSession, createSession } from "../security/session.js";
+import { ensureUsername } from "../security/username.js";
+
+const MAX_AVATAR_BYTES = 256 * 1024;
+
+function validAvatar(value) {
+  if (value === null) return true;
+  if (typeof value !== "string") return false;
+  const match = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/]+={0,2})$/.exec(value);
+  if (!match) return false;
+  const image = Buffer.from(match[2], "base64");
+  if (image.length === 0 || image.length > MAX_AVATAR_BYTES || image.toString("base64") !== match[2]) return false;
+  if (match[1] === "png") return image.subarray(0, 8).equals(Buffer.from("89504e470d0a1a0a", "hex"));
+  if (match[1] === "jpeg") return image.subarray(0, 3).equals(Buffer.from("ffd8ff", "hex"));
+  return image.toString("ascii", 0, 4) === "RIFF" && image.toString("ascii", 8, 12) === "WEBP";
+}
 
 function publicUser(user) {
   return {
     _id: user._id,
     email: user.email,
     name: user.name,
+    username: user.username,
+    location: user.location || "",
+    preferredLanguage: user.preferredLanguage || "en",
+    role: user.role || "member",
     channelname: user.channelname,
     description: user.description,
     image: user.image,
@@ -26,7 +45,8 @@ export async function register(request, response) {
   }
 
   try {
-    const user = await User.create({ email, name, passwordHash: await hashPassword(password) });
+    const created = await User.create({ email, name, passwordHash: await hashPassword(password) });
+    const user = await ensureUsername(created);
     await createSession(response, user);
     return response.status(201).json({ user: publicUser(user) });
   } catch (error) {
@@ -49,8 +69,9 @@ export async function login(request, response) {
       return response.status(401).json({ message: "Invalid email or password." });
     }
 
-    await createSession(response, user);
-    return response.json({ user: publicUser(user) });
+    const namedUser = await ensureUsername(user);
+    await createSession(response, namedUser);
+    return response.json({ user: publicUser(namedUser) });
   } catch (error) {
     console.error("Login failed:", error);
     return response.status(500).json({ message: "Could not sign in." });
@@ -93,5 +114,35 @@ export async function updateprofile(request, response) {
   } catch (error) {
     console.error("Profile update failed:", error);
     return response.status(500).json({ message: "Could not update profile." });
+  }
+}
+
+export async function updateCommentProfile(request, response) {
+  const location = request.body?.location;
+  const image = request.body?.image;
+  const preferredLanguage = request.body?.preferredLanguage;
+  if (location === undefined && image === undefined && preferredLanguage === undefined) {
+    return response.status(400).json({ message: "Choose a profile detail to update." });
+  }
+  if (location !== undefined && (typeof location !== "string" || location.trim().length > 80 || /[\u0000-\u001f\u007f]/.test(location))) {
+    return response.status(400).json({ message: "Enter a location of up to 80 characters." });
+  }
+  if (image !== undefined && !validAvatar(image)) {
+    return response.status(400).json({ message: "Choose a PNG, JPEG or WebP picture under 256 KB." });
+  }
+  if (preferredLanguage !== undefined && !["en", "hi", "es"].includes(preferredLanguage)) {
+    return response.status(400).json({ message: "Choose English, Hindi or Spanish." });
+  }
+
+  try {
+    const changes = {};
+    if (location !== undefined) changes.location = location.trim();
+    if (image !== undefined) changes.image = image;
+    if (preferredLanguage !== undefined) changes.preferredLanguage = preferredLanguage;
+    const user = await User.findByIdAndUpdate(request.user._id, { $set: changes }, { returnDocument: "after", runValidators: true });
+    return response.json({ user: publicUser(user) });
+  } catch (error) {
+    console.error("Comment profile update failed:", error);
+    return response.status(500).json({ message: "Could not update comment profile." });
   }
 }

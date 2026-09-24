@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import Session from "../Modals/Session.js";
 import User from "../Modals/Auth.js";
+import { ensureUsername } from "./username.js";
 
 export const COOKIE_NAME = "vidcircle_session";
 const SESSION_DAYS = 7;
@@ -54,10 +55,15 @@ export async function requireAuth(request, response, next) {
     const user = await User.findById(session.userId);
     if (!user) return response.status(401).json({ message: "Account unavailable." });
 
-    request.user = user;
+    request.user = await ensureUsername(user);
     request.sessionRecord = session;
     next();
   } catch (error) {
     next(error);
   }
+}
+
+export function requireAdmin(request, response, next) {
+  if (request.user?.role !== "admin") return response.status(403).json({ message: "Administrator access required." });
+  next();
 }

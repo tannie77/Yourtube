@@ -45,7 +45,7 @@ cd server && npm test
 cd ../yourtube && npm run build
 ```
 
-Build 1 covers local registration, sign-in, sign-out, session restoration, channel creation/editing, a dashboard, MP4 upload and basic playback. Build 2 covers local membership and protected media. Build 3 adds custom player controls, saved progress, local quality choices, optional captions, timeline previews and next-video controls. Later builds add comments, downloads, OTP and calls. Existing prototype pages outside the new routes still contain unfinished behaviour and lint errors; see the milestone plan for their sequence.
+Build 1 covers local registration, sign-in, sign-out, session restoration, channel creation/editing, a dashboard, MP4 upload and basic playback. Build 2 covers local membership and protected media. Build 3 adds custom player controls, saved progress, local quality choices, optional captions, timeline previews and next-video controls. Build 4A/4B adds signed-in comments, replies, local profiles, @mentions, reactions, sorting and revision-safe edits; translation and moderation are still planned. Later builds add downloads, OTP and calls. Existing prototype pages outside the new routes still contain unfinished behaviour and lint errors; see the milestone plan for their sequence.
 
 ## Build 2: local membership and protected playback
 
@@ -72,6 +72,33 @@ The player loads your private saved position before playback and resumes there w
 ## Build 3C: local quality, captions and up next
 
 New uploads make real lower-resolution MP4 copies locally. The watch player lists all available qualities, greys out those above your plan and keeps your position while changing between allowed copies. An optional uploaded UTF-8 `.vtt` file enables the captions button and C shortcut. Moving over the seek bar shows a generated frame and time. When a clip ends, a five-second countdown offers the next watchable library video; choose **Play now** or **Cancel**, or press N to go next immediately. Captions and preview frames require the same signed-in video access but do not consume daily watch minutes. All generation and playback stay local. A short sample, **Build 3 quality and captions demo**, is available in the local library when using this workspace's existing database. Full-screen and PiP remain browser-dependent and should be checked in a normal supporting browser.
+
+## Build 4A/4B: local conversations
+
+Open a video from the library and scroll to **Conversation**. Signed-in users can post Unicode comments and replies, type `@` to choose a local user, like or dislike once per comment, and sort by newest, oldest, most liked or most relevant. **Edit comment profile** lets you set a self-reported location and a locally stored PNG/JPEG/WebP picture under 256 KB. Your handle is generated automatically and remains stable. Authors can edit or soft-delete within 15 minutes by default; set `COMMENT_EDIT_WINDOW_MINUTES` to an integer from 1 to 1,440 on the API to change that window. A deleted parent remains as a placeholder, and an author can inspect their own edit history. Server-side revision checks reject stale simultaneous changes. Older comments show an initial snapshot because edits made before Build 4B were not recorded.
+
+## Build 4C: translation and comment safety
+
+The watch-page conversation now offers **Translate** for English, Hindi and Spanish. Select your preferred language in **Edit comment profile**. Translation runs through a separate LibreTranslate process bound to `127.0.0.1:5001`; comments and cached translations remain in local MongoDB. To install the open-source runtime into an ignored project folder (Python 3.11 recommended):
+
+```sh
+cd server
+python3 -m venv .local-data/translate-venv
+.local-data/translate-venv/bin/python -m pip install libretranslate==1.9.6
+npm run translation
+```
+
+On its first start, LibreTranslate downloads the English, Hindi and Spanish offline models into `server/.local-data/translate-data`; that one-time setup needs internet. Later translations run locally without a cloud API. Start MongoDB, the API and frontend in their own terminals as usual. If the translation process is stopped or cannot translate a comment, the original remains visible and the page shows an error. This is machine translation; accuracy varies. The setup follows the [LibreTranslate self-hosting guide](https://docs.libretranslate.com/guides/installation/) and uses [Argos Translate models](https://github.com/argosopentech/argos-translate).
+
+New posts and edits reject a basic set of abusive words, links and repeated emoji/special characters or words. An identical comment by the same account on the same video is blocked for 10 minutes. After three posting attempts in one minute, a simple local arithmetic check appears; more than 10 attempts in that minute are paused. This is a prototype safeguard, not a comprehensive moderation or bot-detection service.
+
+Viewers can report another person's comment once for spam, harassment or offensive content. To designate an existing local account as the administrator, first sign up with that account, then run from `server/`:
+
+```sh
+node scripts/set-admin.js admin@example.test
+```
+
+Sign out and back in. The sidebar will show **Moderation**, where the administrator can dismiss reports or remove a comment. Removal is a soft deletion: its replies stay visible beneath a placeholder. Report records and review decisions are stored locally; dislike counts never remove comments automatically. Do not use a real personal email for a disposable demo account.
 
 ### Local receipt inbox
 

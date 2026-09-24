@@ -2,8 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import Header from "@/components/header";
-import Sidebar from "@/components/Sidebar";
+import WorkspaceShell from "@/components/workspace-shell";
 import { useUser } from "@/lib/AuthContent";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -26,15 +25,5 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (pathname === "/dashboard" || pathname === "/subscriptions" || pathname === "/history" || pathname.startsWith("/channel/") || pathname.startsWith("/watch/")) return <>{children}</>;
-
-  return (
-    <>
-      <Header />
-      <div className="flex min-h-[calc(100vh-57px)]">
-        <Sidebar />
-        {children}
-      </div>
-    </>
-  );
+  return <WorkspaceShell>{children}</WorkspaceShell>;
 }
