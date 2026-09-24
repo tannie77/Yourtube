@@ -18,6 +18,8 @@ Replace Firebase-only sign-in with local email/password registration, sign-in, s
 
 Define Free, Bronze, Silver and Gold in one plan configuration with sample prices, monthly/quarterly/yearly terms, feature comparison and renewal rules. Add the dashboard, simulated payment order and signed test result, payment/invoice history, upgrade/downgrade/renew/cancel, receipt email to Mailpit and effective Free plan after expiry. Add server-side entitlement checks for premium videos, quality, watch time, early access, ad display and daily usage limits. Serve protected video through an authorised endpoint instead of the public uploads path.
 
+**Progress:** The first slice provides the server-owned plan catalogue, sample INR prices, a signed-in comparison page and an effective Free-plan read model (including expiry fallback). The next slice adds server-priced local test orders, signed success/failure/cancel results, verification before activation, retry-safe order creation/result handling, and account-only order history with a test reference. No money moves, and the reference is not a tax invoice. Receipt email, plan changes/renewal/cancellation, and media entitlement enforcement remain pending. The displayed benefits are labelled as planned until their access rules are implemented.
+
 **Done when:** a failed or interrupted payment cannot activate a plan; a verified simulated payment can; refresh/duplicate payment is idempotent; an expired plan becomes Free without deleting watch history; direct protected-media requests are denied without access.
 
 ## Build 3 — Custom video player and watch progress

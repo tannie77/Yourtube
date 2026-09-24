@@ -26,7 +26,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (pathname === "/dashboard" || pathname.startsWith("/channel/") || pathname.startsWith("/watch/")) return <>{children}</>;
+  if (pathname === "/dashboard" || pathname === "/subscriptions" || pathname.startsWith("/channel/") || pathname.startsWith("/watch/")) return <>{children}</>;
 
   return (
     <>

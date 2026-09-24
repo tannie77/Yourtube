@@ -46,3 +46,9 @@ cd ../yourtube && npm run build
 ```
 
 Build 1 covers local registration, sign-in, sign-out, session restoration, channel creation/editing, a dashboard, MP4 upload and basic playback. Later builds add subscriptions, protected media, custom player controls, comments, downloads, OTP and calls. Existing prototype pages outside Build 1 still contain unfinished behaviour and lint errors; see the milestone plan for their sequence.
+
+## Build 2 in progress: local membership checkout
+
+From the signed-in dashboard, open **Membership** to compare Free, Bronze, Silver and Gold across monthly, quarterly and yearly sample prices. New accounts start on Free; an expired paid record also reads as Free. Select a paid plan, create a local test order, then simulate success, failure or cancellation. Only a signed, server-verified success activates the chosen term. Failed and cancelled orders leave the membership unchanged. Orders and test-payment references appear in the account's local history, and retrying the same checkout request or result is safe.
+
+This is a simulation: no card details, payment provider or real money are involved. The displayed benefits are still planned, not enforced video entitlements. Receipts, plan changes and renewals, and protected video access are later Build 2 slices. The order reference is not a tax invoice.

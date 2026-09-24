@@ -9,6 +9,7 @@ import likeRoutes from "./routes/like.js";
 import watchLaterRoutes from "./routes/watchlater.js";
 import historyRoutes from "./routes/history.js";
 import commentRoutes from "./routes/comments.js";
+import subscriptionRoutes from "./routes/subscriptions.js";
 
 const app = express();
 const serverDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -30,5 +31,6 @@ app.use("/like", likeRoutes);
 app.use("/watchlater", watchLaterRoutes);
 app.use("/history", historyRoutes);
 app.use("/comment", commentRoutes);
+app.use("/subscriptions", subscriptionRoutes);
 
 export default app;

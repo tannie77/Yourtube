@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Crown,
   Play,
   Plus,
   Search,
@@ -99,6 +100,9 @@ export default function DashboardPage() {
         <nav className="mt-4 space-y-1" aria-label="Main navigation">
           <Link href="/dashboard" className="flex items-center gap-3 rounded-xl bg-[#fff0ec] px-4 py-3 text-sm font-semibold text-[#d95c44]" aria-current="page" onClick={() => setSidebarOpen(false)}>
             <LayoutDashboard className="size-[18px]" aria-hidden="true" /> Dashboard
+          </Link>
+          <Link href="/subscriptions" className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-[#657084] transition hover:bg-[#f6f7f9] hover:text-[#172033]" onClick={() => setSidebarOpen(false)}>
+            <Crown className="size-[18px]" aria-hidden="true" /> Membership
           </Link>
           <a href="#video-library" className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-[#657084] transition hover:bg-[#f6f7f9] hover:text-[#172033]" onClick={() => setSidebarOpen(false)}>
             <Film className="size-[18px]" aria-hidden="true" /> Video library
