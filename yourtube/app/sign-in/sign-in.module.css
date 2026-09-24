@@ -1,0 +1,226 @@
+.authPage {
+  font-family: "Avenir Next", Avenir, "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+}
+
+.showcase {
+  background:
+    radial-gradient(circle at 85% 82%, rgba(230, 95, 77, 0.22), transparent 35%),
+    radial-gradient(circle at 15% 28%, rgba(101, 67, 166, 0.26), transparent 42%),
+    #111727;
+}
+
+.showcase::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  opacity: 0.16;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 52px 52px;
+  mask-image: linear-gradient(to bottom, transparent, #000 35%, transparent 90%);
+  pointer-events: none;
+}
+
+.showcaseGlow {
+  position: absolute;
+  right: -14rem;
+  bottom: -20rem;
+  width: 48rem;
+  height: 48rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(237, 96, 73, 0.19), transparent 65%);
+  pointer-events: none;
+}
+
+.artwork {
+  position: relative;
+  width: min(100%, 580px);
+  margin: 2.5rem auto 1.75rem;
+  padding: 0.65rem 1.2rem 1.6rem;
+}
+
+.orbit {
+  position: absolute;
+  top: -2.8rem;
+  right: -1.5rem;
+  width: 14rem;
+  height: 14rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  box-shadow: 0 0 0 38px rgba(255, 255, 255, 0.025), 0 0 0 76px rgba(255, 255, 255, 0.018);
+}
+
+.videoCard {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  padding: 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 1.6rem;
+  background: rgba(245, 245, 255, 0.13);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.33), inset 0 1px rgba(255, 255, 255, 0.18);
+  transform: rotate(-3deg);
+}
+
+.videoScene {
+  position: relative;
+  overflow: hidden;
+  height: clamp(210px, 27vw, 340px);
+  border-radius: 1.12rem;
+  background: radial-gradient(circle at 72% 30%, #f7c68a 0, #e98973 24%, transparent 53%), linear-gradient(150deg, #7165a4 6%, #c775a0 44%, #f59b73 100%);
+}
+
+.videoScene::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(to bottom, transparent 60%, rgba(21, 28, 47, 0.28));
+}
+
+.sun {
+  position: absolute;
+  top: 19%;
+  right: 23%;
+  width: 19%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #ffe1a8;
+  box-shadow: 0 0 65px 25px rgba(255, 227, 170, 0.4);
+}
+
+.hillBack,
+.hillFront {
+  position: absolute;
+  inset: 0;
+}
+
+.hillBack {
+  background: linear-gradient(145deg, #9b628f, #5b4b83);
+  clip-path: polygon(0 77%, 17% 55%, 30% 70%, 52% 38%, 78% 77%, 100% 52%, 100% 100%, 0 100%);
+}
+
+.hillFront {
+  background: linear-gradient(100deg, #272c59, #554065 60%, #252d51);
+  clip-path: polygon(0 70%, 21% 88%, 47% 64%, 66% 81%, 100% 57%, 100% 100%, 0 100%);
+}
+
+.sceneLabel {
+  position: absolute;
+  z-index: 1;
+  top: 1.35rem;
+  left: 1.5rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+}
+
+.playButton {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: 4.3rem;
+  height: 4.3rem;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.24);
+  color: white;
+  box-shadow: 0 12px 28px rgba(27, 27, 50, 0.2);
+  backdrop-filter: blur(12px);
+  transform: translate(-50%, -50%);
+}
+
+.videoBar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 0.75rem 0.55rem;
+}
+
+.videoBarTrack {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.videoBarTrack span {
+  display: block;
+  width: 28%;
+  height: 100%;
+  border-radius: inherit;
+  background: #ffb59b;
+}
+
+.videoBarTime {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.65rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.commentCard {
+  position: absolute;
+  z-index: 2;
+  right: -0.7rem;
+  bottom: -0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: min(77%, 335px);
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.94);
+  color: #25283a;
+  box-shadow: 0 20px 42px rgba(12, 17, 32, 0.23);
+  transform: rotate(3deg);
+}
+
+.commentAvatar {
+  display: grid;
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 50%;
+  background: #f7d8bf;
+  color: #8e4d45;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.commentCard strong,
+.commentCard small {
+  display: block;
+}
+
+.commentCard strong {
+  font-size: 0.7rem;
+  line-height: 1.2;
+}
+
+.commentCard small {
+  margin-top: 0.2rem;
+  color: #8e94a0;
+  font-size: 0.6rem;
+}
+
+.commentHeart {
+  margin-left: auto;
+  color: #ee6c65;
+  font-size: 1rem;
+}
+
+@media (max-height: 850px) {
+  .artwork {
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .videoScene {
+    height: clamp(180px, 18vw, 210px);
+  }
+}

@@ -1,6 +1,6 @@
 "use client";
 import {
-    Home,
+    LayoutDashboard,
     Compass,
     PlaySquare,
     History,
@@ -22,10 +22,10 @@ const [isdialogopen, setisdialogopen] = useState(false);
 return (
     <aside className="w-64 min-h-screen border-r px-2 py-4">
     <nav className="flex flex-col gap-1">
-        <Link href="/">
+        <Link href="/dashboard">
         <Button variant="ghost" className="w-full justify-start">
-            <Home className="w-5 h-5 mr-3" />
-            Home
+            <LayoutDashboard className="w-5 h-5 mr-3" />
+            Dashboard
         </Button>
         </Link>
 

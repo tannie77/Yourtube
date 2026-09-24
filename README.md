@@ -27,7 +27,16 @@ npm install
 npm run dev -- --hostname 127.0.0.1
 ```
 
-Open `http://127.0.0.1:3000/sign-in` and create a local account. Use `127.0.0.1` consistently for the frontend and API so the browser sends the local session cookie. The API defaults to `http://127.0.0.1:5000`, and the database defaults to `mongodb://127.0.0.1:27017/vidcircle`. Optional settings are listed in `server/.env.example`.
+Open `http://127.0.0.1:3000`; it redirects to sign-in. After creating a local account or signing in, the app opens `/dashboard`. Use `127.0.0.1` consistently for the frontend and API so the browser sends the local session cookie. The API defaults to `http://127.0.0.1:5000`, and the database defaults to `mongodb://127.0.0.1:27017/vidcircle`. Optional settings are listed in `server/.env.example`.
+
+## Try the local video flow
+
+1. Create an account, then create a channel from the dashboard.
+2. Open your channel, choose an MP4 up to 100 MB, add a title and upload it.
+3. Watch it from your channel or the dashboard. The watch page uses the browser's basic video controls; advanced controls and watch progress are later milestones.
+4. Refresh the page or sign in with another account to check that the video remains in the library. A user cannot upload under another channel's identity.
+
+Video files stay in `server/uploads/` and metadata stays in local MongoDB. The current `/uploads/` media URL is public to anyone who knows it; subscription protection arrives in Build 2. Do not use this prototype for private videos yet. Uploaded files, database data and credentials must not be committed.
 
 ## Check the first build
 
@@ -36,4 +45,4 @@ cd server && npm test
 cd ../yourtube && npm run build
 ```
 
-Build 1 covers local registration, sign-in, sign-out, session restoration, and creating and editing your own channel profile. The later builds add subscription checks, protected media, the player, comments, downloads, OTP and calls. Existing prototype pages outside Build 1 still contain unfinished behaviour and lint errors; see the milestone plan for their sequence.
+Build 1 covers local registration, sign-in, sign-out, session restoration, channel creation/editing, a dashboard, MP4 upload and basic playback. Later builds add subscriptions, protected media, custom player controls, comments, downloads, OTP and calls. Existing prototype pages outside Build 1 still contain unfinished behaviour and lint errors; see the milestone plan for their sequence.

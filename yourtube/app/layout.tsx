@@ -1,5 +1,4 @@
-import Header from "@/components/header";
-import Sidebar from "@/components/Sidebar";
+import AppShell from "@/components/app-shell";
 import { UserProvider } from "@/lib/AuthContent";
 import type { Metadata } from "next";
 import "./globals.css";
@@ -18,13 +17,11 @@ export default function RootLayout({
     <html lang="en">
       <body suppressHydrationWarning>
         <UserProvider>
-          <Header />
-          <div className="flex min-h-[calc(100vh-57px)]">
-            <Sidebar />
+          <AppShell>
             {children}
-          </div>
+          </AppShell>
         </UserProvider>
-</body>
+      </body>
     </html>
   );
 }

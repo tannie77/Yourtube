@@ -1,80 +1,194 @@
 "use client";
 
 import axios from "axios";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {
+  AlertCircle,
+  ArrowRight,
+  Eye,
+  EyeOff,
+  LockKeyhole,
+  Mail,
+  Play,
+  UserRound,
+} from "lucide-react";
 import { useUser } from "@/lib/AuthContent";
+import styles from "./sign-in.module.css";
+
+type Mode = "sign-in" | "register";
 
 export default function SignInPage() {
   const router = useRouter();
   const { user, loading, signIn, register } = useUser();
-  const [mode, setMode] = useState<"sign-in" | "register">("sign-in");
+  const [mode, setMode] = useState<Mode>("sign-in");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const isRegistering = mode === "register";
 
   useEffect(() => {
-    if (!loading && user) router.replace("/");
+    if (!loading && user) router.replace("/dashboard");
   }, [loading, router, user]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setSubmitting(true);
+
     try {
-      if (mode === "register") await register(name, email, password);
+      if (isRegistering) await register(name, email, password);
       else await signIn(email, password);
-      router.replace("/");
+      router.replace("/dashboard");
     } catch (caught) {
       const message = axios.isAxiosError(caught) ? caught.response?.data?.message : null;
-      setError(message || "Could not connect to the local server.");
+      setError(message || "Could not connect to the local server. Please try again.");
     } finally {
       setSubmitting(false);
     }
   }
 
+  function changeMode() {
+    setMode(isRegistering ? "sign-in" : "register");
+    setPassword("");
+    setShowPassword(false);
+    setError("");
+  }
+
+  const fieldClass = "h-13 w-full rounded-2xl border border-[#d9dde5] bg-white pl-12 pr-4 text-[15px] text-[#171b2a] outline-none transition placeholder:text-[#9ca3af] hover:border-[#b7beca] focus-visible:border-[#e65b45] focus-visible:ring-4 focus-visible:ring-[#e65b45]/10";
+
   return (
-    <main className="flex flex-1 items-start justify-center p-6 pt-12">
-      <div className="w-full max-w-md rounded-xl border bg-card p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold">{mode === "register" ? "Create a local account" : "Sign in to VidCircle"}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Your account is stored in the local prototype database.</p>
+    <main className={`${styles.authPage} min-h-screen lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]`}>
+      <section className="flex min-h-screen flex-col bg-[#faf9f7] px-6 py-6 sm:px-10 lg:px-12 lg:py-7 xl:px-20">
+        <div className="flex items-center justify-between gap-4">
+          <div className="inline-flex items-center gap-3" aria-label="VidCircle">
+            <span className="flex size-10 items-center justify-center rounded-[13px] bg-[#ed6049] text-white shadow-[0_8px_18px_rgba(237,96,73,0.24)]">
+              <Play className="ml-0.5 size-5 fill-current" strokeWidth={1.5} aria-hidden="true" />
+            </span>
+            <span className="text-[22px] font-bold tracking-[-0.06em] text-[#171b2a]">VidCircle<span className="text-[#ed6049]">.</span></span>
+          </div>
+        </div>
 
-        <form onSubmit={submit} className="mt-6 space-y-4">
-          {mode === "register" && (
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} required maxLength={80} />
+        <div className="flex flex-1 items-center justify-center py-8 sm:py-10 lg:py-6">
+          <div className="w-full max-w-[440px]">
+            <span className="inline-flex items-center gap-2 rounded-full border border-[#f5ddd6] bg-[#fff1ec] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.15em] text-[#c45a42]">
+              <span className="size-1.5 rounded-full bg-[#ed6049]" />
+              Your space for what&apos;s next
+            </span>
+
+            <h1 className="mt-5 text-[clamp(2.7rem,4.5vw,3.6rem)] leading-[1.04] font-semibold tracking-[-0.065em] text-[#171b2a]">
+              {isRegistering ? <>Make room<br />for more.</> : <>Welcome<br />back.</>}
+            </h1>
+            <p className="mt-3 max-w-[360px] text-[15px] leading-7 text-[#687181]">
+              {isRegistering
+                ? "Create your local account and start making this space your own."
+                : "Sign in to pick up where you left off, from the videos you love to the people you follow."}
+            </p>
+
+            <form onSubmit={submit} className="mt-7 space-y-4">
+              {isRegistering && (
+                <div>
+                  <label htmlFor="name" className="mb-2 block text-sm font-semibold text-[#242938]">Your name</label>
+                  <div className="relative">
+                    <UserRound className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-[#9aa2af]" aria-hidden="true" />
+                    <input id="name" name="name" type="text" autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} maxLength={80} placeholder="What should we call you?" className={fieldClass} required />
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="email" className="mb-2 block text-sm font-semibold text-[#242938]">Email address</label>
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-[#9aa2af]" aria-hidden="true" />
+                  <input id="email" name="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" className={fieldClass} aria-invalid={Boolean(error)} aria-describedby={error ? "auth-error" : undefined} required />
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <label htmlFor="password" className="text-sm font-semibold text-[#242938]">Password</label>
+                  {isRegistering && <span className="text-xs text-[#8a92a0]">At least 8 characters</span>}
+                </div>
+                <div className="relative">
+                  <LockKeyhole className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-[#9aa2af]" aria-hidden="true" />
+                  <input id="password" name="password" type={showPassword ? "text" : "password"} autoComplete={isRegistering ? "new-password" : "current-password"} value={password} onChange={(event) => setPassword(event.target.value)} minLength={isRegistering ? 8 : undefined} placeholder={isRegistering ? "Create a password" : "Enter your password"} className={`${fieldClass} pr-12`} aria-invalid={Boolean(error)} aria-describedby={error ? "auth-error" : undefined} required />
+                  <button type="button" onClick={() => setShowPassword((visible) => !visible)} className="absolute top-1/2 right-4 flex size-6 -translate-y-1/2 items-center justify-center rounded text-[#818a99] transition hover:text-[#242938] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e65b45]" aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword}>
+                    {showPassword ? <EyeOff className="size-[18px]" aria-hidden="true" /> : <Eye className="size-[18px]" aria-hidden="true" />}
+                  </button>
+                </div>
+              </div>
+
+              {error && (
+                <p id="auth-error" role="alert" className="flex items-start gap-2 rounded-xl bg-[#fff0ed] px-4 py-3 text-sm leading-5 text-[#a53828]">
+                  <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                  {error}
+                </p>
+              )}
+
+              <button type="submit" disabled={submitting || loading} className="group mt-1 flex h-13 w-full items-center justify-center gap-3 rounded-2xl bg-[#ed6049] px-5 text-[15px] font-semibold text-white shadow-[0_12px_25px_rgba(237,96,73,0.22)] transition hover:-translate-y-0.5 hover:bg-[#dc523c] hover:shadow-[0_16px_28px_rgba(237,96,73,0.26)] focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#e65b45] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0">
+                {submitting ? "Please wait…" : loading ? "Checking session…" : isRegistering ? "Create your account" : "Sign in to VidCircle"}
+                {!submitting && !loading && <ArrowRight className="size-[18px] transition group-hover:translate-x-0.5" aria-hidden="true" />}
+              </button>
+            </form>
+
+            <p className="mt-6 text-center text-sm text-[#697383]">
+              {isRegistering ? "Already have an account?" : "New to VidCircle?"}{" "}
+              <button type="button" onClick={changeMode} className="font-semibold text-[#db5b45] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#e65b45]">
+                {isRegistering ? "Sign in" : "Create an account"}
+              </button>
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs text-[#9aa2ad]">
+          <span>© {new Date().getFullYear()} VidCircle</span>
+          <span>Local prototype · No external sign-in</span>
+        </div>
+      </section>
+
+      <aside className={`${styles.showcase} relative hidden min-h-screen flex-col overflow-hidden px-12 py-7 text-white lg:flex xl:px-16`}>
+        <div className={styles.showcaseGlow} aria-hidden="true" />
+        <div className="relative z-10 flex items-center justify-between gap-4">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/55">Watch · Create · Connect</span>
+          <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1.5 text-[11px] font-medium text-white/75">Local preview</span>
+        </div>
+
+        <div className="relative z-10 flex flex-1 flex-col justify-center py-12">
+          <h2 className="max-w-[540px] text-[clamp(2.6rem,4vw,4.5rem)] leading-[1.04] font-semibold tracking-[-0.065em]">
+            A new way to <span className="text-[#ffad90]">stay in the story.</span>
+          </h2>
+          <p className="mt-4 max-w-[390px] text-[15px] leading-7 text-[#c3c8d9]">
+            One place for the videos you love, the conversations they start, and the people you share them with.
+          </p>
+
+          <div className={styles.artwork} aria-hidden="true">
+            <div className={styles.orbit} />
+            <div className={styles.videoCard}>
+              <div className={styles.videoScene}>
+                <div className={styles.sun} />
+                <div className={styles.hillBack} />
+                <div className={styles.hillFront} />
+                <div className={styles.sceneLabel}>THE NEXT CHAPTER</div>
+                <div className={styles.playButton}><Play className="ml-1 size-7 fill-current" strokeWidth={1.5} /></div>
+              </div>
+              <div className={styles.videoBar}>
+                <span className={styles.videoBarTrack}><span /></span>
+                <span className={styles.videoBarTime}>02:18 / 08:42</span>
+              </div>
             </div>
-          )}
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+            <div className={styles.commentCard}>
+              <span className={styles.commentAvatar}>A</span>
+              <span><strong>Good stories bring us together.</strong><small>Join the conversation</small></span>
+              <span className={styles.commentHeart}>♥</span>
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" autoComplete={mode === "register" ? "new-password" : "current-password"} value={password} onChange={(event) => setPassword(event.target.value)} minLength={mode === "register" ? 8 : undefined} required />
-          </div>
-          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" className="w-full" disabled={submitting || loading}>
-            {submitting ? "Please wait…" : mode === "register" ? "Create account" : "Sign in"}
-          </Button>
-        </form>
+        </div>
 
-        <button
-          type="button"
-          className="mt-4 text-sm text-primary underline-offset-4 hover:underline"
-          onClick={() => { setMode(mode === "register" ? "sign-in" : "register"); setError(""); }}
-        >
-          {mode === "register" ? "Already have an account? Sign in" : "New here? Create an account"}
-        </button>
-        <p className="mt-6 text-sm"><Link href="/" className="underline">Back to videos</Link></p>
-      </div>
+        <p className="relative z-10 text-xs tracking-wide text-white/45">Your corner of the internet, made more human.</p>
+      </aside>
     </main>
   );
 }

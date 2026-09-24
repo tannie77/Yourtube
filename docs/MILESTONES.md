@@ -5,14 +5,14 @@
 - One Next.js frontend, one Express API and one local MongoDB database.
 - Every requirement gets a visible local user flow and stored state before optional cloud integrations are considered.
 - External-world boundaries use named test doubles: a simulated payment, Mailpit inbox, local translation model, and local WebRTC room. The UI must identify simulated payments and location data.
-- A build is complete when its main flow and specified failure cases pass locally. Keep one focused commit and push a review branch for each completed build. Review and merge that branch before starting the next build from `main`.
+- A build is complete when its main flow and specified failure cases pass locally. Review each build locally first; do not commit or push to GitHub without agreeing that handoff with the user.
 - Preserve existing work and never commit local database files, uploaded media, credentials or downloaded binaries.
 
 ## Build 1 — Local foundation and accounts
 
-Replace Firebase-only sign-in with local email/password registration, sign-in, sign-out and persisted sessions. Keep the existing frontend and API. Provide a one-command local MongoDB launcher, setup instructions and an integration test for account lifecycle and profile ownership. Make the frontend compile, and make the existing channel-create flow lead to a working profile page.
+Replace Firebase-only sign-in with local email/password registration, sign-in, sign-out and persisted sessions. Keep the existing frontend and API. Provide a one-command local MongoDB launcher, setup instructions and an integration test for account lifecycle and profile ownership. Add a polished dashboard and channel studio, local MP4 upload, real video cards and a basic browser-controlled watch page. Keep custom player controls and protected-media rules for later builds.
 
-**Done when:** two users can create accounts in separate browsers, refresh without losing their sessions, sign out independently, and cannot edit one another's profiles. A user can create and edit a channel profile. The API test and frontend build pass.
+**Done when:** two users can create accounts in separate browsers, refresh without losing their sessions, sign out independently, and cannot edit one another's profiles. A user can create and edit a channel profile. An MP4 uploaded by a channel owner appears in the dashboard and channel library after refresh, and another signed-in user can watch it but cannot upload under that owner's identity. The API tests and frontend build pass.
 
 ## Build 2 — Plans, simulated checkout and video access
 

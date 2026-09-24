@@ -54,7 +54,7 @@ const Header = () => {
           <Menu className="w-6 h-6" />
         </Button>
 
-        <Link href="/" className="flex items-center gap-1">
+        <Link href="/dashboard" className="flex items-center gap-1">
           <div className="bg-red-600 p-1 rounded">
             <svg
               width="24"
