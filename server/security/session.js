@@ -25,14 +25,29 @@ function cookieOptions() {
   };
 }
 
-export async function createSession(response, user) {
+export async function createSession(response, user, { context = {}, trustedDeviceId = null } = {}) {
   const token = randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
-  await Session.create({ userId: user._id, tokenHash: hashToken(token), expiresAt });
+  const session = await Session.create({
+    userId: user._id,
+    tokenHash: hashToken(token),
+    trustedDeviceId,
+    ip: context.ip || "",
+    userAgent: context.userAgent || "",
+    browser: context.browser || "Unknown browser",
+    browserVersion: context.browserVersion || "",
+    os: context.os || "Unknown OS",
+    deviceType: context.deviceType || "Unknown device",
+    deviceModel: context.deviceModel || "",
+    testCity: context.testCity || "",
+    testState: context.testState || "",
+    expiresAt,
+  });
   response.cookie(COOKIE_NAME, token, {
     ...cookieOptions(),
     expires: expiresAt,
   });
+  return session;
 }
 
 export async function clearSession(request, response) {
@@ -57,10 +72,18 @@ export async function requireAuth(request, response, next) {
 
     request.user = await ensureUsername(user);
     request.sessionRecord = session;
+    if (!session.lastSeenAt || Date.now() - session.lastSeenAt.getTime() > 5 * 60 * 1000) {
+      session.lastSeenAt = new Date();
+      await session.save();
+    }
     next();
   } catch (error) {
     next(error);
   }
+}
+
+export function clearSessionCookie(response) {
+  response.clearCookie(COOKIE_NAME, cookieOptions());
 }
 
 export function requireAdmin(request, response, next) {

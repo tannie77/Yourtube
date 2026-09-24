@@ -1,5 +1,15 @@
 import mongoose from "mongoose";
 import User from "../Modals/Auth.js";
+import { clientContext } from "../security/client-context.js";
+import {
+  challengeContext,
+  findTrustedContext,
+  recordLoginAttempt,
+  startOtpChallenge,
+  touchTrustedContext,
+  trustContext,
+  verifyOtpToken,
+} from "../security/login-security.js";
 import { hashPassword, verifyPassword } from "../security/password.js";
 import { clearSession, createSession } from "../security/session.js";
 import { ensureUsername } from "../security/username.js";
@@ -18,7 +28,7 @@ function validAvatar(value) {
   return image.toString("ascii", 0, 4) === "RIFF" && image.toString("ascii", 8, 12) === "WEBP";
 }
 
-function publicUser(user) {
+export function publicUser(user) {
   return {
     _id: user._id,
     email: user.email,
@@ -26,6 +36,7 @@ function publicUser(user) {
     username: user.username,
     location: user.location || "",
     preferredLanguage: user.preferredLanguage || "en",
+    themePreference: user.themePreference || "automatic",
     role: user.role || "member",
     channelname: user.channelname,
     description: user.description,
@@ -47,7 +58,10 @@ export async function register(request, response) {
   try {
     const created = await User.create({ email, name, passwordHash: await hashPassword(password) });
     const user = await ensureUsername(created);
-    await createSession(response, user);
+    const context = clientContext(request, request.body);
+    const trustedDevice = await trustContext(user._id, context);
+    await createSession(response, user, { context, trustedDeviceId: trustedDevice._id });
+    await recordLoginAttempt({ userId: user._id, email, eventType: "registration", outcome: "signed_in", successful: true, context });
     return response.status(201).json({ user: publicUser(user) });
   } catch (error) {
     if (error.code === 11000) return response.status(409).json({ message: "Email is already registered." });
@@ -63,18 +77,72 @@ export async function login(request, response) {
     return response.status(400).json({ message: "Email and password are required." });
   }
 
+  const context = clientContext(request, request.body);
   try {
     const user = await User.findOne({ email }).select("+passwordHash");
     if (!user || !(await verifyPassword(password, user.passwordHash))) {
+      await recordLoginAttempt({ userId: user?._id, email, eventType: "password", outcome: "invalid_credentials", successful: false, context });
       return response.status(401).json({ message: "Invalid email or password." });
     }
 
     const namedUser = await ensureUsername(user);
-    await createSession(response, namedUser);
+    const trustedDevice = await findTrustedContext(namedUser._id, context);
+    if (!trustedDevice) {
+      try {
+        const challenge = await startOtpChallenge(namedUser, context);
+        await recordLoginAttempt({ userId: namedUser._id, email, eventType: "password", outcome: "otp_required", successful: true, context });
+        return response.status(202).json({
+          otpRequired: true,
+          challengeToken: challenge.token,
+          expiresAt: challenge.expiresAt,
+          destination: namedUser.email.replace(/^(.{1,2}).*(@.*)$/, "$1•••$2"),
+          message: "Enter the code captured by the local Mailpit inbox.",
+        });
+      } catch {
+        await recordLoginAttempt({ userId: namedUser._id, email, eventType: "password", outcome: "otp_delivery_failed", successful: false, context });
+        return response.status(503).json({ message: "Could not deliver the local sign-in code. Start Mailpit and try again." });
+      }
+    }
+
+    await touchTrustedContext(trustedDevice);
+    await createSession(response, namedUser, { context, trustedDeviceId: trustedDevice._id });
+    await recordLoginAttempt({ userId: namedUser._id, email, eventType: "password", outcome: "signed_in", successful: true, context });
     return response.json({ user: publicUser(namedUser) });
   } catch (error) {
     console.error("Login failed:", error);
     return response.status(500).json({ message: "Could not sign in." });
+  }
+}
+
+export async function verifyLoginOtp(request, response) {
+  const challengeToken = String(request.body?.challengeToken || "");
+  const code = String(request.body?.code || "").trim();
+
+  try {
+    const result = await verifyOtpToken(challengeToken, code);
+    if (result.status === "invalid" || result.status === "locked") {
+      if (result.challenge) {
+        const context = challengeContext(result.challenge);
+        await recordLoginAttempt({ userId: result.challenge.userId, email: result.challenge.email, eventType: "otp", outcome: "otp_failed", successful: false, context });
+      }
+      return response.status(result.status === "locked" ? 429 : 400).json({ message: result.status === "locked" ? "Too many incorrect codes. Sign in again to request a new code." : "Enter the valid six-digit code from Mailpit." });
+    }
+    if (result.status === "expired") {
+      const context = challengeContext(result.challenge);
+      await recordLoginAttempt({ userId: result.challenge.userId, email: result.challenge.email, eventType: "otp", outcome: "otp_expired", successful: false, context });
+      return response.status(410).json({ message: "That code has expired. Sign in again to request a new code." });
+    }
+
+    const context = challengeContext(result.challenge);
+    const user = await User.findById(result.challenge.userId);
+    if (!user) return response.status(410).json({ message: "Account unavailable." });
+    const trustedDevice = await trustContext(user._id, context);
+    await createSession(response, user, { context, trustedDeviceId: trustedDevice._id });
+    await recordLoginAttempt({ userId: user._id, email: user.email, eventType: "otp", outcome: "otp_verified", successful: true, context });
+    return response.json({ user: publicUser(await ensureUsername(user)) });
+  } catch (error) {
+    console.error("OTP verification failed:", error);
+    return response.status(500).json({ message: "Could not verify the local sign-in code." });
   }
 }
 

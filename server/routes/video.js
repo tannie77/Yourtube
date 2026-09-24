@@ -1,6 +1,7 @@
 import express from "express";
 import multer from "multer";
 import { getallvideo, getCaption, getPreview, getWatchHistory, getWatchProgress, getWatchUsage, saveWatchProgress, streamvideo, uploadvideo } from "../Controllers/video.js";
+import { downloadVideo, getDownloadThumbnail, getDownloads, getDownloadUsage } from "../Controllers/downloads.js";
 import upload from "../filehelp/filehelp.js";
 import { requireAuth } from "../security/session.js";
 
@@ -27,6 +28,11 @@ routes.post("/upload", requireAuth, requireChannel, receiveVideo, uploadvideo);
 routes.get("/getall", requireAuth, getallvideo);
 routes.get("/usage/me", requireAuth, getWatchUsage);
 routes.get("/history/me", requireAuth, getWatchHistory);
+routes.get("/downloads/usage/me", requireAuth, getDownloadUsage);
+routes.get("/downloads/me", requireAuth, getDownloads);
+routes.get("/downloads/:recordId/thumbnail", requireAuth, getDownloadThumbnail);
+routes.head("/:id/download", requireAuth, (_request, response) => response.status(405).end());
+routes.get("/:id/download", requireAuth, downloadVideo);
 routes.get("/:id/progress", requireAuth, getWatchProgress);
 routes.put("/:id/progress", requireAuth, saveWatchProgress);
 routes.get("/:id/media", requireAuth, streamvideo);

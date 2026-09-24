@@ -29,12 +29,12 @@ function publicVideo(record, user, subscription) {
   };
 }
 
-function storedPath(video) {
+export function storedPath(video) {
   const storedName = path.posix.basename(String(video.filepath || "").replaceAll("\\", "/"));
   return storedName.toLowerCase().endsWith(".mp4") ? path.join(uploadDirectory, storedName) : null;
 }
 
-async function withMetadata(video) {
+export async function withMetadata(video) {
   if (video.sourceQuality && video.durationSeconds) return video;
   const filePath = storedPath(video);
   if (!filePath) return { ...video, mediaUnavailable: true };

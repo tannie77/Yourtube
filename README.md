@@ -45,7 +45,7 @@ cd server && npm test
 cd ../yourtube && npm run build
 ```
 
-Build 1 covers local registration, sign-in, sign-out, session restoration, channel creation/editing, a dashboard, MP4 upload and basic playback. Build 2 covers local membership and protected media. Build 3 adds custom player controls, saved progress, local quality choices, optional captions, timeline previews and next-video controls. Build 4A/4B adds signed-in comments, replies, local profiles, @mentions, reactions, sorting and revision-safe edits; translation and moderation are still planned. Later builds add downloads, OTP and calls. Existing prototype pages outside the new routes still contain unfinished behaviour and lint errors; see the milestone plan for their sequence.
+Build 1 covers local registration, sign-in, sign-out, session restoration, channel creation/editing, a dashboard, MP4 upload and basic playback. Build 2 covers local membership and protected media. Build 3 adds custom player controls, saved progress, local quality choices, optional captions, timeline previews and next-video controls. Build 4 adds signed-in conversations, local translation support and moderation. Build 5 adds official-download quotas and private history. Build 6 adds trusted-browser OTP, account-security history/session controls and persisted time-aware themes. Later builds add calls and the complete demonstration. Existing prototype pages outside the new routes still contain unfinished behaviour and lint errors; see the milestone plan for their sequence.
 
 ## Build 2: local membership and protected playback
 
@@ -100,6 +100,16 @@ node scripts/set-admin.js admin@example.test
 
 Sign out and back in. The sidebar will show **Moderation**, where the administrator can dismiss reports or remove a comment. Removal is a soft deletion: its replies stay visible beneath a placeholder. Report records and review decisions are stored locally; dislike counts never remove comments automatically. Do not use a real personal email for a disposable demo account.
 
+## Build 5A–5C: local downloads, history and safeguards
+
+Open a watchable video and use **Download MP4** below the player. The local API checks your session, active plan, video access and allowed quality before serving a complete MP4 attachment. It chooses the highest quality your plan currently permits. The watch page shows today's remaining official downloads: Free 1, Bronze 3, Silver 10, Gold 25. The quota resets at midnight IST. Download counts are separate from watch-time minutes.
+
+The server reserves a slot before transfer and records a completed download after it finishes; it releases the slot if the transfer fails or disconnects while the API is running. The sidebar's **Downloads** page shows your private history, title, thumbnail (when its video still exists), time, transfer status, file size, quality, plan and today's remaining quota. Records remain visible after a plan expires; new records also retain their title if the video is later removed. The database stores IP, user-agent, and basic browser/device labels; the history API does not expose the raw IP or user-agent. The page is a record, not a second place to retrieve the MP4.
+
+Downloading the same video again within 30 minutes is blocked with a retry time; the blocked request does **not** consume another quota slot. A different video may still use an available slot. Failed or interrupted transfers release their slot and same-video guard so they can be retried. The per-day counter and per-video guard are atomic for concurrent requests to this local API. The IST day changes at midnight; a transfer belongs to the day it started.
+
+If the API stops mid-transfer, startup recovery marks unfinished records as failed and rebuilds daily counters and recent same-video guards from completed records before accepting requests. This is designed for one local API process; it cannot prove whether a browser received the final bytes immediately before a hard crash. Build 6 now provides trusted-device records, but applying them as a download restriction remains optional and unimplemented. A saved MP4 can be copied outside VidCircle, and a determined user can save bytes from the separate watch stream; this prototype quota governs the official **Download MP4** action, not digital-rights protection.
+
 ### Local receipt inbox
 
 Install [Mailpit](https://mailpit.axllent.org/docs/install/) as a local binary, then run it in another terminal from the project root:
@@ -109,3 +119,11 @@ mailpit --listen 127.0.0.1:8025 --smtp 127.0.0.1:1025 --database server/.local-d
 ```
 
 Open `http://127.0.0.1:8025` to view captured test emails. Mailpit does not deliver them to real addresses. If Mailpit is stopped, verified membership changes still succeed: the receipt stays visible in the app, its email status shows as unavailable, and **Retry local email** sends it after Mailpit starts. The API connects only to `127.0.0.1`; its SMTP port can be changed with `MAILPIT_SMTP_PORT`.
+
+## Build 6: local sign-in security and themes
+
+Registration trusts its initial browser context. On later sign-ins the API compares the browser-local device ID, browser/version, OS, device type/model, connection IP and optional test city/state. A new or changed context does not receive a session immediately: VidCircle sends a six-digit code to the registered email in the local Mailpit inbox, and the sign-in page verifies it first. Start Mailpit before testing an unfamiliar context. Codes expire after ten minutes and lock after five incorrect attempts.
+
+Open **Security** from the shared sidebar to review active sessions, trusted browsers and recent password/OTP events. You can revoke another session, sign out the current session, remove browser trust, or set optional local test city/state values. Those location values are explicitly user-supplied demo data; localhost cannot discover a meaningful public IP, country or real geolocation. A trusted context lasts 30 days by default; set `TRUSTED_DEVICE_DAYS` to an integer from 1 to 365 to change it.
+
+Appearance defaults to light from 5:00 AM until noon IST and dark outside that window. Choosing Automatic, Light or Dark on the Security page saves the preference on the local account and restores it after later sign-ins. Existing sessions created before Build 6 show unknown client details until the account signs in again through the new flow.

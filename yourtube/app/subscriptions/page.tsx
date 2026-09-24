@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { ArrowRight, BadgeCheck, Check, CircleCheck, CircleX, Clock3, CreditCard, Crown, Download, Mail, Play, RotateCcw, ShieldCheck, Sparkles, Tv2 } from "lucide-react";
 import axiosInstance from "@/lib/axiosinstance";
 import { useUser } from "@/lib/AuthContent";
@@ -252,7 +251,7 @@ export default function SubscriptionsPage() {
           <div className="relative z-10 flex flex-col gap-9 lg:flex-row lg:items-center lg:justify-between">
             <div className="max-w-[610px]">
               <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[#ffded4]">
-                <span className="size-1.5 rounded-full bg-[#ffae98]" /> Build 2 · Membership
+                <span className="size-1.5 rounded-full bg-[#ffae98]" /> VidCircle membership
               </span>
               <h1 className="mt-6 text-[clamp(2.2rem,4vw,3.7rem)] font-semibold leading-[1.08] tracking-[-0.065em]">
                 A plan for every <span className="text-[#ffb39f]">way to watch.</span>
@@ -534,7 +533,6 @@ export default function SubscriptionsPage() {
               <div>
                 <h2 className="text-base font-semibold">Simple local membership rules</h2>
                 <p className="mt-1.5 max-w-[920px] text-sm leading-6 text-[#737e90]">A verified renewal extends the current expiry. Upgrades start immediately without prorating unused time. A verified downgrade is prepaid and begins at the end of the current term. Cancellation ends access after all prepaid terms. Nothing renews or charges automatically.</p>
-                <Link href="/dashboard" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#d9644e] hover:text-[#b9513f]">Back to your dashboard <ArrowRight className="size-4" aria-hidden="true" /></Link>
               </div>
             </section>
           </>

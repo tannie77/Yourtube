@@ -7,6 +7,7 @@ const userschema = new mongoose.Schema({
   username: { type: String, unique: true, sparse: true, lowercase: true, trim: true },
   location: { type: String, default: "" },
   preferredLanguage: { type: String, enum: ["en", "hi", "es"], default: "en" },
+  themePreference: { type: String, enum: ["automatic", "light", "dark"], default: "automatic" },
   role: { type: String, enum: ["member", "admin"], default: "member" },
   channelname: { type: String },
   description: { type: String },
