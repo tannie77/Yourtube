@@ -1,0 +1,4 @@
+server/.local-data/
+server/uploads/
+server/.env.local
+server/node_modules/

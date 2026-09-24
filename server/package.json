@@ -4,8 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "db": "node scripts/local-db.js",
+    "dev": "nodemon index.js",
+    "start": "node index.js",
+    "test": "node --test"
   },
   "keywords": [],
   "author": "",
@@ -24,5 +26,8 @@
     "mongoose": "^9.9.3",
     "multer": "^2.2.0",
     "nodemon": "^3.1.14"
+  },
+  "devDependencies": {
+    "mongodb-memory-server-core": "^11.3.0"
   }
 }

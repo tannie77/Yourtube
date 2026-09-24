@@ -5,8 +5,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Youtube Clone",
-  description: "Youtube Clone App",
+  title: "VidCircle",
+  description: "Local video platform prototype",
 };
 
 export default function RootLayout({

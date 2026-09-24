@@ -4,7 +4,6 @@ const videoschema = mongoose.Schema(
     videotitle: { type: String, required: true },
     filename: { type: String, required: true },
     filetype: { type: String, required: true },
-    filename: { type: String, required: true },
     filepath: { type: String, required: true },
     filesize: { type: String, required: true },
     videochanel: { type: String, required: true },

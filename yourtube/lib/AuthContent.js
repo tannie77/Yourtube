@@ -1,72 +1,50 @@
 "use client";
 
-import { onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
 import { useEffect, useState } from "react";
-import { createContext , useContext} from "react";
-import { auth, provider } from "./firebase";
+import { createContext, useContext } from "react";
 import axiosInstance from "./axiosinstance";
 
 const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    if (typeof window === "undefined") return null;
-    const storedUser = localStorage.getItem("user");
-    return storedUser ? JSON.parse(storedUser) : null;
-  });
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = (userdata) => {
-    setUser(userdata);
-    localStorage.setItem("user", JSON.stringify(userdata));
+  useEffect(() => {
+    let active = true;
+    axiosInstance.get("/user/me")
+      .then((response) => { if (active) setUser(response.data.user); })
+      .catch(() => { if (active) setUser(null); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
+
+  const signIn = async (email, password) => {
+    const response = await axiosInstance.post("/user/login", { email, password });
+    setUser(response.data.user);
+    return response.data.user;
+  };
+
+  const register = async (name, email, password) => {
+    const response = await axiosInstance.post("/user/register", { name, email, password });
+    setUser(response.data.user);
+    return response.data.user;
   };
 
   const logout = async () => {
+    await axiosInstance.post("/user/logout");
     setUser(null);
-    localStorage.removeItem("user");
-    await signOut(auth);
   };
 
-  const handlegooglesignin = async () => {
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const firebaseuser = result.user
-      const payload={
-        email:firebaseuser.email,
-        name:firebaseuser.displayName,
-        image:firebaseuser.photoURL||"https://github.com/shadcn.png",
-      };
-      const response = await axiosInstance.post("/users/login",payload);
-      login(response.data.result);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-useEffect(() => {
-  const unsubscribe = onAuthStateChanged(auth, async (firebaseuser) => {
-    if (firebaseuser) {
-      try {
-        const payload = {
-          email: firebaseuser.email,
-          name: firebaseuser.displayName,
-          image: firebaseuser.photoURL || "https://github.com/shadcn.png",
-        };
-        const response = await axiosInstance.post("/user/login", payload);
-        login(response.data.result);
-      } catch (error) {
-        console.error(error);
-        logout();
-      }
-    }
-  });
-  return () => unsubscribe();
-}, []);
+  const login = (updatedUser) => setUser(updatedUser);
 
-return (
-  <UserContext.Provider value={{ user, login, logout, handlegooglesignin }}>
-    {children}
-  </UserContext.Provider>
-);
+  return (
+    <UserContext.Provider value={{ user, loading, login, logout, signIn, register }}>
+      {children}
+    </UserContext.Provider>
+  );
 };
+
 export const useUser = () => {
   const context = useContext(UserContext);
   if (!context) {

@@ -1,14 +1,19 @@
 "use strict";
+import { mkdirSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import multer from "multer";
+
+const uploadDirectory = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "uploads");
+mkdirSync(uploadDirectory, { recursive: true });
+
 const storage = multer.diskStorage({
-  destination: (req, res, cb) => {
-    cb(null, "uploads");
+  destination: (_request, _file, callback) => {
+    callback(null, uploadDirectory);
   },
-  filename: (req, res, cb) => {
-    cb(
-      null,
-      new Date().toISOString().replace(/:/g, "-") + "-" + file.originalname
-    );
+  filename: (_request, file, callback) => {
+    const safeName = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, "_");
+    callback(null, `${Date.now()}-${safeName}`);
   },
 });
 const filefilter = (req, file, cb) => {

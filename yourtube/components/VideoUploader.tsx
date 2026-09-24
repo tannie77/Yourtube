@@ -1,4 +1,5 @@
 import { Check, FileVideo, Upload, X } from "lucide-react";
+import type { AxiosProgressEvent } from "axios";
 import React, { ChangeEvent, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
@@ -7,7 +8,7 @@ import { Progress } from "./ui/progress";
 import { Input } from "./ui/input";
 import axiosinstance from "@/lib/axiosinstance";
 
-const VideoUploader = ({ channelId, channelName }: any) => {
+const VideoUploader = ({ channelId, channelName }: { channelId: string; channelName: string }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -66,18 +67,18 @@ const VideoUploader = ({ channelId, channelName }: any) => {
     const formdata = new FormData();
 
     formdata.append("file", videoFile);
-    formdata.append("title", videoTitle);
-    formdata.append("videochannel", channelName);
+    formdata.append("videotitle", videoTitle);
+    formdata.append("videochanel", channelName);
     formdata.append("uploader", channelId);
 
     try {
       setIsUploading(true);
       setUploadProgress(0);
 
-      const res = await axiosinstance.post("/video/upload", formdata, {
-        onUploadProgress: (progresEvent: any) => {
+      await axiosinstance.post("/video/upload", formdata, {
+        onUploadProgress: (progresEvent: AxiosProgressEvent) => {
           const progress = Math.round(
-            (progresEvent.loaded * 100) / progresEvent.total
+            (progresEvent.loaded * 100) / (progresEvent.total || videoFile.size)
           );
 
           setUploadProgress(progress);
@@ -191,13 +192,10 @@ const VideoUploader = ({ channelId, channelName }: any) => {
                       Cancel
                     </Button>
 
-                    <Button>
+                    <Button
                       onClick={handleUpload}
-                      disabled={
-                        isUploading ||
-                        !videoTitle.trim() ||
-                        uploadComplete
-                      }
+                      disabled={isUploading || !videoTitle.trim() || uploadComplete}
+                    >
                       {isUploading ? "Uploading..." : "Upload"}
                     </Button>
                   </>

@@ -26,10 +26,10 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/lib/AuthContent";
-// import Channeldialogue from "./Channeldialogue";
+import Channeldialogue from "./channeldialgoue";
 
 const Header = () => {
-  const { user, logout, handlegooglesignin } = useUser();
+  const { user, loading: authLoading, logout } = useUser();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isdialogopen, setisdialogopen] = useState(false);
@@ -43,12 +43,6 @@ const Header = () => {
       router.push(
         `/search?q=${encodeURIComponent(searchQuery.trim())}`
       );
-    }
-  };
-
-  const handleKeypress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSearch(e as any);
     }
   };
 
@@ -72,7 +66,7 @@ const Header = () => {
             </svg>
           </div>
 
-          <span className="text-xl font-medium">YourTube</span>
+          <span className="text-xl font-medium">VidCircle</span>
           <span className="text-xs text-gray-400 ml-1">IN</span>
         </Link>
       </div>
@@ -87,7 +81,6 @@ const Header = () => {
             type="search"
             placeholder="Search"
             value={searchQuery}
-            onKeyPress={handleKeypress}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="rounded-l-full border-r-0 focus-visible:ring-0"
           />
@@ -175,31 +168,24 @@ const Header = () => {
 
                 <DropdownMenuSeparator />
 
-                <DropdownMenuItem onClick={logout}>
+                <DropdownMenuItem onClick={() => { void logout(); }}>
                   Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </>
-        ) : (
-          <Button
-            className="flex items-center gap-2"
-            onClick={handlegooglesignin}
-          >
-            <User className="w-4 h-4" />
-            Sign in
+        ) : !authLoading ? (
+          <Button asChild className="flex items-center gap-2">
+            <Link href="/sign-in"><User className="w-4 h-4" />Sign in</Link>
           </Button>
-        )}
+        ) : null}
       </div>
 
-      {/* Channel Dialog */}
-      {/* 
       <Channeldialogue
         isopen={isdialogopen}
         onclose={() => setisdialogopen(false)}
         mode="create"
       />
-      */}
     </header>
   );
 };
