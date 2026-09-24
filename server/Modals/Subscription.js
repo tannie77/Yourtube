@@ -9,6 +9,13 @@ const subscriptionSchema = new mongoose.Schema({
   expiresAt: { type: Date, required: true },
   cancelAtPeriodEnd: { type: Boolean, default: false },
   lastOrderId: { type: mongoose.Schema.Types.ObjectId, ref: "checkoutOrder" },
+  scheduledChange: {
+    planId: { type: String, enum: paidPlanIds },
+    billingCycle: { type: String, enum: billingCycles.map((cycle) => cycle.id) },
+    startsAt: { type: Date },
+    expiresAt: { type: Date },
+    orderId: { type: mongoose.Schema.Types.ObjectId, ref: "checkoutOrder" },
+  },
 }, { timestamps: true });
 
 export default mongoose.model("subscription", subscriptionSchema);

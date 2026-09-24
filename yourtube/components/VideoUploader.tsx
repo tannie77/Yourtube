@@ -5,7 +5,7 @@ import Link from "next/link";
 import axios from "axios";
 import { ArrowUpRight, FileVideo, Upload, X } from "lucide-react";
 import axiosInstance from "@/lib/axiosinstance";
-import type { LocalVideo } from "@/lib/local-video";
+import type { LocalVideo, VideoAccessPlan } from "@/lib/local-video";
 
 const maxBytes = 100 * 1024 * 1024;
 
@@ -17,9 +17,13 @@ type Props = {
 
 export default function VideoUploader({ channelName, onUploaded }: Props) {
   const fileInput = useRef<HTMLInputElement>(null);
+  const captionInput = useRef<HTMLInputElement>(null);
   const requestController = useRef<AbortController | null>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [captions, setCaptions] = useState<File | null>(null);
   const [title, setTitle] = useState("");
+  const [accessPlan, setAccessPlan] = useState<VideoAccessPlan>("free");
+  const [earlyAccess, setEarlyAccess] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
@@ -50,6 +54,17 @@ export default function VideoUploader({ channelName, onUploaded }: Props) {
     if (fileInput.current) fileInput.current.value = "";
   }
 
+  function selectCaptions(event: ChangeEvent<HTMLInputElement>) {
+    const chosen = event.target.files?.[0] || null;
+    setError("");
+    if (chosen && (!chosen.name.toLowerCase().endsWith(".vtt") || chosen.size > 1024 * 1024)) {
+      setError("Choose a WebVTT (.vtt) caption file up to 1 MB.");
+      event.target.value = "";
+      return;
+    }
+    setCaptions(chosen);
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!file || !title.trim()) {
@@ -59,7 +74,10 @@ export default function VideoUploader({ channelName, onUploaded }: Props) {
 
     const form = new FormData();
     form.set("file", file);
+    if (captions) form.set("captions", captions);
     form.set("videotitle", title.trim());
+    form.set("accessPlan", accessPlan);
+    form.set("earlyAccess", String(earlyAccess));
     const controller = new AbortController();
     requestController.current = controller;
     setUploading(true);
@@ -76,9 +94,13 @@ export default function VideoUploader({ channelName, onUploaded }: Props) {
       });
       setUploadedVideo(response.data.video);
       setFile(null);
+      setCaptions(null);
       setTitle("");
+      setAccessPlan("free");
+      setEarlyAccess(false);
       setProgress(0);
       if (fileInput.current) fileInput.current.value = "";
+      if (captionInput.current) captionInput.current.value = "";
       onUploaded?.(response.data.video);
     } catch (uploadError) {
       if (axios.isCancel(uploadError)) {
@@ -118,11 +140,34 @@ export default function VideoUploader({ channelName, onUploaded }: Props) {
       )}
 
       <div>
+        <label htmlFor="video-captions" className="mb-2 block text-sm font-semibold text-[#344054]">Captions <span className="font-normal text-[#8d96a5]">(optional)</span></label>
+        <input ref={captionInput} id="video-captions" type="file" accept=".vtt,text/vtt" onChange={selectCaptions} disabled={uploading} className="block w-full rounded-xl border border-[#dce2ea] bg-white p-3 text-sm text-[#344054] file:mr-3 file:rounded-lg file:border-0 file:bg-[#fff0ec] file:px-3 file:py-2 file:font-semibold file:text-[#d75b45] disabled:opacity-60" />
+        <p className="mt-1.5 text-xs text-[#8d96a5]">Upload a UTF-8 WebVTT file with time-coded cues, up to 1 MB.</p>
+      </div>
+
+      <div>
         <label htmlFor="video-title" className="mb-2 block text-sm font-semibold text-[#344054]">Video title</label>
         <input id="video-title" type="text" maxLength={120} value={title} onChange={(event) => setTitle(event.target.value)} disabled={uploading} placeholder="Give your video a name" className="h-12 w-full rounded-xl border border-[#dce2ea] bg-white px-4 text-sm text-[#172033] outline-none transition placeholder:text-[#a0a8b5] focus:border-[#ed6049] focus:ring-4 focus:ring-[#ed6049]/10 disabled:opacity-60" />
       </div>
 
-      {uploading && <div aria-live="polite"><div className="mb-2 flex justify-between text-xs font-semibold text-[#697486]"><span>{progress === 100 ? "Saving your video…" : "Uploading…"}</span><span>{progress}%</span></div><div className="h-2 overflow-hidden rounded-full bg-[#f3e6e2]"><div className="h-full rounded-full bg-[#ed6049] transition-all" style={{ width: `${progress}%` }} /></div></div>}
+      <div>
+        <label htmlFor="video-access-plan" className="mb-2 block text-sm font-semibold text-[#344054]">Minimum viewer plan</label>
+        <select id="video-access-plan" value={accessPlan} onChange={(event) => setAccessPlan(event.target.value as VideoAccessPlan)} disabled={uploading} className="h-12 w-full rounded-xl border border-[#dce2ea] bg-white px-4 text-sm text-[#172033] outline-none transition focus:border-[#ed6049] focus:ring-4 focus:ring-[#ed6049]/10 disabled:opacity-60">
+          <option value="free">Free · anyone signed in</option>
+          <option value="bronze">Bronze or higher</option>
+          <option value="silver">Silver or higher</option>
+          <option value="gold">Gold only</option>
+        </select>
+        <p className="mt-1.5 text-xs leading-5 text-[#8d96a5]">You can always preview your own upload. Other viewers need the selected plan or higher.</p>
+        <p className="mt-1 text-xs leading-5 text-[#8d96a5]">New uploads make lower-resolution local copies where needed. Free can select up to 480p, Bronze 720p, Silver 1080p and Gold 4K. Older uploads without copies keep their source-quality gate.</p>
+      </div>
+
+      <label className="flex items-start gap-3 rounded-xl border border-[#e8ebf0] bg-[#fafbfc] p-4 text-sm text-[#344054]">
+        <input type="checkbox" checked={earlyAccess} onChange={(event) => setEarlyAccess(event.target.checked)} disabled={uploading} className="mt-0.5 accent-[#ed6049]" />
+        <span><span className="font-semibold">Gold early access for seven days</span><span className="mt-1 block text-xs leading-5 text-[#8d96a5]">After seven days, the selected minimum plan and available quality determine access automatically.</span></span>
+      </label>
+
+      {uploading && <div aria-live="polite"><div className="mb-2 flex justify-between text-xs font-semibold text-[#697486]"><span>{progress === 100 ? "Creating local qualities and previews…" : "Uploading…"}</span><span>{progress}%</span></div><div className="h-2 overflow-hidden rounded-full bg-[#f3e6e2]"><div className="h-full rounded-full bg-[#ed6049] transition-all" style={{ width: `${progress}%` }} /></div></div>}
       {error && <p role="alert" className="rounded-xl border border-[#f3d5cf] bg-[#fff7f4] px-4 py-3 text-sm text-[#a34d3d]">{error}</p>}
       {uploadedVideo && <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#cce7d9] bg-[#f2fbf6] px-4 py-3 text-sm text-[#276b4b]"><span>Video uploaded successfully.</span><Link href={`/watch/${uploadedVideo._id}`} className="inline-flex items-center gap-1 font-semibold hover:underline">Watch it <ArrowUpRight className="size-4" aria-hidden="true" /></Link></div>}
 

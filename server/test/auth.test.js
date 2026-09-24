@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server-core";
 import app from "../app.js";
+import User from "../Modals/Auth.js";
 
 const serverDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 let database;
@@ -17,6 +18,7 @@ before(async () => {
     binary: { downloadDir: path.join(serverDirectory, ".local-data", "binaries") },
   });
   await mongoose.connect(database.getUri("vidcircle_test"));
+  await User.init();
   httpServer = await new Promise((resolve) => {
     const server = app.listen(0, "127.0.0.1", () => resolve(server));
   });

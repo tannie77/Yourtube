@@ -68,6 +68,9 @@ test("account plan is Free by default and an expired paid record never grants pa
     billingCycle: null,
     startedAt: null,
     expiresAt: null,
+    remainingDays: 0,
+    scheduledChange: null,
+    accessEndsAt: null,
     cancelAtPeriodEnd: false,
     autoRenew: false,
   });

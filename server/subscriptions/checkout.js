@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 import CheckoutOrder from "../Modals/CheckoutOrder.js";
 import Subscription from "../Modals/Subscription.js";
 import { billingCycles, findPlan } from "./plans.js";
+import { deliverReceipt, publicReceipt } from "./receipts.js";
+import { isActive, orderIntent, readSubscription, termLength } from "./state.js";
 
 const outcomeToStatus = { success: "paid", failure: "failed", cancel: "cancelled" };
 const processingTimeoutMs = 15_000;
@@ -10,6 +12,8 @@ const processingTimeoutMs = 15_000;
 export function publicOrder(order) {
   return {
     orderId: order.id,
+    intent: order.intent || "purchase",
+    fromPlanId: order.fromPlanId || null,
     planId: order.planId,
     billingCycle: order.billingCycle,
     amountPaise: order.amountPaise,
@@ -17,8 +21,11 @@ export function publicOrder(order) {
     status: order.status,
     createdAt: order.createdAt,
     paidAt: order.paidAt || null,
+    termStartsAt: order.termStartsAt || null,
+    termExpiresAt: order.termExpiresAt || null,
     paymentId: order.paymentId || null,
     invoiceNumber: order.invoiceNumber || null,
+    receiptStatus: order.status === "paid" ? (order.receiptStatus || "pending") : null,
     failureReason: order.failureReason || null,
     simulatedResult: order.simulatedResult ? {
       outcome: order.simulatedResult.outcome,
@@ -80,14 +87,19 @@ export async function createOrder(request, response) {
       return response.json({ order: publicOrder(previous) });
     }
 
-    const subscription = await Subscription.findOne({ userId: request.user._id });
-    if (subscription && subscription.expiresAt > new Date()) {
-      return response.status(409).json({ message: "A paid plan is already active. Plan changes are coming in a later step." });
+    const subscription = await readSubscription(request.user._id);
+    if (isActive(subscription) && subscription.scheduledChange?.orderId) {
+      return response.status(409).json({ message: "A prepaid plan change is already scheduled. Let it start before creating another order." });
     }
+
+    const intent = orderIntent(subscription, planId);
 
     const order = await CheckoutOrder.create({
       userId: request.user._id,
       idempotencyKey,
+      intent,
+      fromPlanId: isActive(subscription) ? subscription.planId : undefined,
+      fromExpiresAt: isActive(subscription) ? subscription.expiresAt : undefined,
       planId,
       billingCycle,
       amountPaise: plan.pricesPaise[billingCycle],
@@ -173,7 +185,7 @@ export async function simulateResult(request, response) {
   }
 }
 
-async function finishPaidOrder(order) {
+async function finishPaidOrder(order, term) {
   const paidAt = new Date();
   return CheckoutOrder.findOneAndUpdate(
     { _id: order._id, status: "processing" },
@@ -182,6 +194,9 @@ async function finishPaidOrder(order) {
       paidAt,
       paymentId: order.simulatedResult.paymentId,
       invoiceNumber: `VC-${order.id.toUpperCase()}`,
+      termStartsAt: term.startsAt,
+      termExpiresAt: term.expiresAt,
+      receiptStatus: "pending",
     } },
     { returnDocument: "after" },
   );
@@ -189,35 +204,74 @@ async function finishPaidOrder(order) {
 
 async function activateSubscription(order) {
   const now = new Date();
-  const current = await Subscription.findOne({ userId: order.userId });
-  if (current?.lastOrderId?.toString() === order.id) return true;
-  if (current && current.expiresAt > now) return false;
-
-  const cycle = billingCycles.find((item) => item.id === order.billingCycle);
-  const values = {
-    planId: order.planId,
-    billingCycle: order.billingCycle,
-    startedAt: now,
-    expiresAt: new Date(now.getTime() + cycle.validityDays * 24 * 60 * 60 * 1000),
-    cancelAtPeriodEnd: false,
-    lastOrderId: order._id,
-  };
-  if (!current) {
-    try {
-      await Subscription.create({ userId: order.userId, ...values });
-      return true;
-    } catch (error) {
-      if (error.code === 11000) return false;
-      throw error;
-    }
+  const current = await readSubscription(order.userId, now);
+  const length = termLength(order.billingCycle);
+  if (current?.lastOrderId?.toString() === order.id) {
+    const scheduled = current.scheduledChange?.orderId?.toString() === order.id ? current.scheduledChange : null;
+    return {
+      startsAt: scheduled?.startsAt || (order.intent === "renewal" ? order.fromExpiresAt : current.startedAt),
+      expiresAt: scheduled?.expiresAt || current.expiresAt,
+    };
   }
 
-  const updated = await Subscription.findOneAndUpdate(
-    { _id: current._id, expiresAt: { $lte: now } },
-    { $set: values },
-    { returnDocument: "after" },
-  );
-  return Boolean(updated);
+  const intent = order.intent || "purchase";
+  if (intent === "purchase") {
+    if (isActive(current, now)) return null;
+    const term = { startsAt: now, expiresAt: new Date(now.getTime() + length) };
+    const values = {
+      planId: order.planId,
+      billingCycle: order.billingCycle,
+      startedAt: term.startsAt,
+      expiresAt: term.expiresAt,
+      cancelAtPeriodEnd: false,
+      lastOrderId: order._id,
+    };
+    if (!current) {
+      try {
+        await Subscription.create({ userId: order.userId, ...values });
+        return term;
+      } catch (error) {
+        if (error.code === 11000) return null;
+        throw error;
+      }
+    }
+    const updated = await Subscription.findOneAndUpdate(
+      { _id: current._id, expiresAt: { $lte: now }, "scheduledChange.orderId": { $exists: false } },
+      { $set: values, $unset: { scheduledChange: 1 } },
+      { returnDocument: "after" },
+    );
+    return updated ? term : null;
+  }
+
+  if (!isActive(current, now) || current.planId !== order.fromPlanId ||
+      current.expiresAt.getTime() !== order.fromExpiresAt?.getTime() ||
+      current.scheduledChange?.orderId) return null;
+
+  const startsAt = intent === "upgrade" ? now : current.expiresAt;
+  const term = { startsAt, expiresAt: new Date(startsAt.getTime() + length) };
+  const filter = {
+    _id: current._id,
+    planId: order.fromPlanId,
+    expiresAt: order.fromExpiresAt,
+    "scheduledChange.orderId": { $exists: false },
+  };
+  let update;
+  if (intent === "downgrade") {
+    update = { $set: {
+      scheduledChange: { planId: order.planId, billingCycle: order.billingCycle,
+        startsAt: term.startsAt, expiresAt: term.expiresAt, orderId: order._id },
+      lastOrderId: order._id,
+    } };
+  } else if (intent === "renewal") {
+    update = { $set: { billingCycle: order.billingCycle, expiresAt: term.expiresAt,
+      cancelAtPeriodEnd: false, lastOrderId: order._id } };
+  } else {
+    update = { $set: { planId: order.planId, billingCycle: order.billingCycle,
+      startedAt: term.startsAt, expiresAt: term.expiresAt,
+      cancelAtPeriodEnd: false, lastOrderId: order._id } };
+  }
+  const updated = await Subscription.findOneAndUpdate(filter, update, { returnDocument: "after" });
+  return updated ? term : null;
 }
 
 export async function verifyResult(request, response) {
@@ -228,7 +282,9 @@ export async function verifyResult(request, response) {
       return response.status(400).json({ message: "The local test result could not be verified." });
     }
     if (["paid", "failed", "cancelled"].includes(order.status)) {
-      return response.json({ order: publicOrder(order) });
+      const latest = order.status === "paid" && order.receiptStatus !== "sent"
+        ? await deliverReceipt(order, request.user) : order;
+      return response.json({ order: publicOrder(latest) });
     }
 
     if (order.simulatedResult.outcome !== "success") {
@@ -257,19 +313,44 @@ export async function verifyResult(request, response) {
       return response.status(latest.status === "processing" ? 202 : 200).json({ order: publicOrder(latest) });
     }
 
-    const activated = await activateSubscription(claimed);
-    if (!activated) {
+    const term = await activateSubscription(claimed);
+    if (!term) {
       const failed = await CheckoutOrder.findOneAndUpdate(
         { _id: order._id, status: "processing" },
-        { $set: { status: "failed", failureReason: "Another paid plan is already active." } },
+        { $set: { status: "failed", failureReason: "Your membership changed before this test order was verified." } },
         { returnDocument: "after" },
       );
-      return response.status(409).json({ order: publicOrder(failed), message: "A paid plan is already active." });
+      return response.status(409).json({ order: publicOrder(failed), message: "Your membership changed. Start a new test order." });
     }
-    const paid = await finishPaidOrder(claimed);
-    return response.json({ order: publicOrder(paid) });
+    const paid = await finishPaidOrder(claimed, term);
+    const withReceipt = await deliverReceipt(paid, request.user);
+    return response.json({ order: publicOrder(withReceipt) });
   } catch (error) {
     console.error("Could not verify local test result:", error);
     return response.status(500).json({ message: "Could not verify the local test result. Retry safely." });
+  }
+}
+
+export async function getReceipt(request, response) {
+  try {
+    const order = await ownedOrder(request);
+    if (!order || order.status !== "paid") return response.status(404).json({ message: "Test receipt not found." });
+    response.set("Cache-Control", "no-store");
+    return response.json({ receipt: publicReceipt(order, request.user) });
+  } catch (error) {
+    console.error("Could not load local receipt:", error);
+    return response.status(500).json({ message: "Could not load the test receipt." });
+  }
+}
+
+export async function retryReceipt(request, response) {
+  try {
+    const order = await ownedOrder(request);
+    if (!order || order.status !== "paid") return response.status(404).json({ message: "Test receipt not found." });
+    const latest = await deliverReceipt(order, request.user);
+    return response.json({ order: publicOrder(latest), receipt: publicReceipt(latest, request.user) });
+  } catch (error) {
+    console.error("Could not retry local receipt:", error);
+    return response.status(500).json({ message: "Could not retry the local receipt." });
   }
 }

@@ -11,6 +11,9 @@ const simulatedResultSchema = new mongoose.Schema({
 const checkoutOrderSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "user", required: true, index: true },
   idempotencyKey: { type: String, required: true },
+  intent: { type: String, enum: ["purchase", "renewal", "upgrade", "downgrade"], default: "purchase" },
+  fromPlanId: { type: String, enum: paidPlanIds },
+  fromExpiresAt: { type: Date },
   planId: { type: String, enum: paidPlanIds, required: true },
   billingCycle: { type: String, enum: billingCycles.map((cycle) => cycle.id), required: true },
   amountPaise: { type: Number, required: true, min: 1 },
@@ -22,6 +25,12 @@ const checkoutOrderSchema = new mongoose.Schema({
   paymentId: { type: String },
   invoiceNumber: { type: String },
   paidAt: { type: Date },
+  termStartsAt: { type: Date },
+  termExpiresAt: { type: Date },
+  receiptStatus: { type: String, enum: ["pending", "sending", "sent", "failed"] },
+  receiptAttempts: { type: Number, default: 0 },
+  receiptClaimedAt: { type: Date },
+  receiptSentAt: { type: Date },
   failureReason: { type: String },
 }, { timestamps: true });
 

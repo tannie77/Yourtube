@@ -30,6 +30,14 @@ export type SubscriptionSnapshot = {
   billingCycle: BillingCycleId | null;
   startedAt: string | null;
   expiresAt: string | null;
+  remainingDays: number;
+  scheduledChange: {
+    planId: Exclude<Plan["id"], "free">;
+    billingCycle: BillingCycleId;
+    startsAt: string;
+    expiresAt: string;
+  } | null;
+  accessEndsAt: string | null;
   cancelAtPeriodEnd: boolean;
   autoRenew: false;
 };
@@ -42,6 +50,8 @@ export type SimulatedResult = {
 
 export type CheckoutOrder = {
   orderId: string;
+  intent: "purchase" | "renewal" | "upgrade" | "downgrade";
+  fromPlanId: Exclude<Plan["id"], "free"> | null;
   planId: Exclude<Plan["id"], "free">;
   billingCycle: BillingCycleId;
   amountPaise: number;
@@ -49,10 +59,31 @@ export type CheckoutOrder = {
   status: "pending" | "processing" | "paid" | "failed" | "cancelled";
   createdAt: string;
   paidAt: string | null;
+  termStartsAt: string | null;
+  termExpiresAt: string | null;
   paymentId: string | null;
   invoiceNumber: string | null;
+  receiptStatus: "pending" | "sending" | "sent" | "failed" | null;
   failureReason: string | null;
   simulatedResult: SimulatedResult | null;
+};
+
+export type TestReceipt = {
+  reference: string;
+  orderId: string;
+  paymentId: string;
+  recipient: string;
+  planName: string;
+  billingCycle: BillingCycleId;
+  intent: CheckoutOrder["intent"];
+  amountPaise: number;
+  currency: "INR";
+  paidAt: string;
+  termStartsAt: string | null;
+  termExpiresAt: string | null;
+  emailStatus: "pending" | "sending" | "sent" | "failed";
+  emailSentAt: string | null;
+  notice: string;
 };
 
 export function formatRupees(paise: number) {

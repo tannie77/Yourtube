@@ -11,6 +11,7 @@ import {
   LogOut,
   Menu,
   Crown,
+  History,
   Play,
   Plus,
   Search,
@@ -103,6 +104,9 @@ export default function DashboardPage() {
           </Link>
           <Link href="/subscriptions" className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-[#657084] transition hover:bg-[#f6f7f9] hover:text-[#172033]" onClick={() => setSidebarOpen(false)}>
             <Crown className="size-[18px]" aria-hidden="true" /> Membership
+          </Link>
+          <Link href="/history" className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-[#657084] transition hover:bg-[#f6f7f9] hover:text-[#172033]" onClick={() => setSidebarOpen(false)}>
+            <History className="size-[18px]" aria-hidden="true" /> Watch history
           </Link>
           <a href="#video-library" className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-[#657084] transition hover:bg-[#f6f7f9] hover:text-[#172033]" onClick={() => setSidebarOpen(false)}>
             <Film className="size-[18px]" aria-hidden="true" /> Video library
