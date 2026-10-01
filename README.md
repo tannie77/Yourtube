@@ -1,63 +1,128 @@
-# YourTube 2.0
+<h1 align="center">▶ YourTube 2.0</h1>
 
-This is the new working app based on the original YourTube clone. It keeps the clone's Next.js Pages Router and layout while reusing VidCircle's account and protected-video code.
+<p align="center">
+  A YouTube-inspired video app with VidCircle's creator, community, membership, and security features.
+</p>
 
-## Migrated so far
+<p align="center">
+  <img alt="Next.js 15" src="https://img.shields.io/badge/Next.js-15.3.3-000000?logo=nextdotjs&logoColor=white">
+  <img alt="React 19" src="https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white">
+  <img alt="Express 5" src="https://img.shields.io/badge/Express-5-303030?logo=express&logoColor=white">
+  <img alt="MongoDB" src="https://img.shields.io/badge/MongoDB-local-47A248?logo=mongodb&logoColor=white">
+</p>
 
-- Local registration, password sign-in, session cookies, trusted-browser OTP through Mailpit, and owner-checked channel edits.
-- Session-owned MP4 uploads (up to 100 MB), optional WebVTT captions, metadata validation, private preview frames, and generated quality variants.
-- Authenticated video feed, search, owner channel list, custom watch player, and private watch history. Video, caption, and preview responses use access checks, and playback supports byte ranges. The player reuses VidCircle's resume and progress tracking, timeline previews, quality and speed controls, captions, keyboard shortcuts, theatre and full-screen modes, Picture-in-Picture, cross-tab pause, and up-next countdown.
-- Light/dark controls on sign-in and signed-in pages. Signed-out choices stay in the browser; signed-in choices are saved to the account.
-- VidCircle's membership catalogue, signed local test checkout, order history, receipts, renewal, upgrade, scheduled downgrade, cancellation, and expiry are available through the new Membership page. Video access, quality gates, daily viewing reservation, and watch-progress endpoints use the active plan.
-- Protected MP4 downloads, plan-based daily download limits, interrupted-transfer recovery, a watch-page Download action, and private download history are migrated from VidCircle.
-- Session-owned Likes and Watch later, with actions on video cards and watch pages and private library pages.
-- The watch-page conversation supports Unicode comments, replies, resolved @mentions, like/dislike reactions, four sort modes, author-only timed edits and soft deletion, private revision history, and local abuse, duplicate, flood, and posting-challenge checks. Viewers can translate comments on demand to English, Hindi, or Spanish and report another user's comment once. A designated administrator can dismiss reports or remove comments from a review queue with a retained moderation log. Comment actions follow the viewer's video plan.
-- The Security page shows active sessions, trusted browsers, and recent sign-in attempts. Viewers can revoke individual or other sessions, remove trusted browsers, set a local test city/state for the next sign-in check, and save an automatic, light, or dark appearance choice to their account.
-- The Video rooms page creates authenticated private rooms with 24-character links. Signed-in people can join without media or choose camera and microphone, see participants, switch devices, mute, pause video, share a screen, raise a hand, and send live messages and files up to 128 KB. Messages and files are relayed live and are not stored; they clear on leaving or refreshing. The host can make a local recording, which downloads to their browser and shows a recording indicator to everyone in the room. The server enforces a four-person limit, locked entry, host/co-host actions, removal, and chat/file/screen-share permissions. Peer media uses VidCircle's local WebRTC mesh with no TURN relay, so connectivity outside the local network is not guaranteed. Three-browser live media, screen sharing, recording, and device QA are still pending.
+<p align="center">
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#features">Features</a> ·
+  <a href="#local-demo">Local demo</a> ·
+  <a href="#project-status">Project status</a> ·
+  <a href="outputs/01a0e3e8-d9b4-7433-af76-646a3e6c8cf2/YourTube_2.0_Requirements_Tracker.xlsx">Requirements tracker</a>
+</p>
 
-## Local setup
+> [!NOTE]
+> This branch is a **local review build**. Checkout is simulated, the ad is a demo placeholder, and live room media still needs hands-on QA.
 
-Use Node.js 22 and install `ffmpeg` and `ffprobe` on your PATH for video upload processing. The new app uses its own local MongoDB database, `yourtube2`, rather than VidCircle's `vidcircle` database.
+## Features
 
-1. From `server/`, run `npm ci`, then `npm run db` in one terminal and `npm run start` in another.
-2. From `yourtube/`, run `npm ci` and `npm run dev -- --hostname 127.0.0.1`.
-3. Open `http://127.0.0.1:3000/`; signed-out visits go to `/sign-in`. Use this hostname for both frontend and API so local session cookies work consistently.
-   In development, **Continue with local preview** creates a demo account and opens the app without entering credentials. It uses a normal local session; each click creates a new demo account.
-4. For an unfamiliar-browser sign-in, start a local Mailpit SMTP listener on `127.0.0.1:1025` and read the code in its local inbox on port 8025. See `server/.env.example` for configuration.
-5. After signing in, open **Membership** in the sidebar. Choose a plan and simulate success, failure, or cancellation. No card details or real money are involved. A verified success unlocks eligible protected videos; receipts appear in the page and can be sent or retried through local Mailpit.
-6. Open a watchable video and scroll to **Conversation** to post, reply, type `@` for user suggestions, react, sort, translate, or report. **Edit comment profile** sets a self-reported location, preferred translation language, and a local PNG/JPEG/WebP picture up to 256 KB. Authors can edit or soft-delete for 15 minutes by default; set `COMMENT_EDIT_WINDOW_MINUTES` on the API to an integer from 1 to 1,440 to change this local limit. Replies remain beneath a deleted-parent placeholder.
-7. Open **Security** in the sidebar or account menu to review sessions and recent sign-ins. Removing a trusted browser makes its next sign-in require OTP. The local test city/state values are stored in this browser and are not geolocation.
-8. Open **Video rooms** to create a room or paste a room link. Choose **Join without media** or **Join with camera and mic**; the latter asks for browser device permission. Inside the room, use the mic/camera controls and device selectors, share a screen, raise a hand, send a message or small file, and use host controls when appropriate. The host can start and stop a local recording. Share the link with another signed-in account to check a member join and live conversation. A room link stays valid until its host ends the room.
+| Area | What is included |
+| --- | --- |
+| **Accounts & security** | Registration, password sign-in, session cookies, Mailpit one-time codes, trusted browsers, session controls, and owner-checked channel edits. |
+| **Videos & player** | Signed-in feed and search, MP4 uploads, optional WebVTT captions, private previews, quality variants, protected streaming, watch progress, and playback controls. |
+| **Membership & downloads** | Free-to-Gold plans, simulated checkout, receipts, renewal and plan changes, viewing limits, protected downloads, and private download history. |
+| **Community** | Likes, Watch later, threaded comments, mentions, reactions, translation, reports, and admin moderation. |
+| **Video rooms** | Private rooms for up to four people, live chat and small files, host controls, optional camera and mic, screen sharing, and local recording. |
+| **Interface** | Responsive YouTube-style pages with consistent spacing and light, dark, or automatic appearance. |
 
-### Local demo fixtures
+## Quick start
 
-With MongoDB and the API running, run `npm run demo:seed` from `server/` to create three clearly named demo accounts (creator, viewer, admin), a 16-second Free captioned MP4, a 12-second Silver MP4, and Hindi and Spanish comments. The command accepts only the loopback `yourtube2` database and local API on port 5000. It can be rerun without duplicating these accounts, videos or comments, and it leaves other records alone.
-
-The generated credentials and record IDs are in `server/.local-data/demo/manifest.json` (owner-readable only). Generated source videos are in that same ignored folder; uploaded media is also ignored. Sign-in from a new browser requests a Mailpit code, so start Mailpit before using these accounts interactively. This seed does not simulate purchases or mark any browser as trusted.
-
-### Local comment translation
-
-Translation uses a separate LibreTranslate process on `127.0.0.1:5001`. The current local workspace has VidCircle's Python runtime and English, Hindi, and Spanish models copied into the ignored `server/.local-data/` directory. On a fresh checkout, install the runtime with Python 3.11 and start it in its own terminal:
+You need **Node.js 22** and npm. Install `ffmpeg` and `ffprobe` if you want to upload videos or generate demo media. The local MongoDB runner downloads its binary on first use; a separate MongoDB installation is not required.
 
 ```sh
-cd server
-python3 -m venv .local-data/translate-venv
-.local-data/translate-venv/bin/python -m pip install libretranslate==1.9.6
-npm run translation
+git clone --branch codex/yourtube-2.0-migration-20261002 https://github.com/tannie77/Yourtube.git yourtube-2.0
+cd yourtube-2.0
+npm --prefix server ci
+npm --prefix yourtube ci
+cp server/.env.example server/.env
 ```
 
-The first start downloads the offline models and needs internet; later translations run locally. If the process is stopped, the original comment remains visible and the page shows an error. `COMMENT_TRANSLATE_PORT` sets the API's loopback port. Machine translation and the local spam checks are prototype safeguards.
+Start these commands in **three separate terminals**, from the repository root:
 
-The **Moderation** sidebar link appears only for users whose local account has `role: "admin"`. The API enforces this role on every review request; registration creates ordinary members.
+| Terminal | Command | Service |
+| --- | --- | --- |
+| 1 | `npm --prefix server run db` | Local MongoDB on `127.0.0.1:27017` |
+| 2 | `npm --prefix server start` | API on `127.0.0.1:5000` |
+| 3 | `npm --prefix yourtube run dev -- --hostname 127.0.0.1` | App on `127.0.0.1:3000` |
 
-Run `npm test` from `server/` for account and protected-media integration checks, and `npm run build` from `yourtube/` for the frontend check.
+Open **[http://127.0.0.1:3000](http://127.0.0.1:3000)**. The sign-in page offers **Continue with local preview** in development, which creates a local demo account. Use `127.0.0.1` for both the app and API so session cookies behave consistently.
 
-See [DEMO_REVIEW.md](DEMO_REVIEW.md) for the VidCircle parity map, six demo journeys, fixture state and outstanding browser checks.
+The server's local defaults are in [`server/.env.example`](server/.env.example). The frontend uses `http://127.0.0.1:5000` by default; set `NEXT_PUBLIC_BACKEND_URL` if your API runs elsewhere. The app uses the separate `yourtube2` database and does not import accounts or videos from the original clone.
 
-See the [YourTube 2.0 requirements tracker](outputs/01a0e3e8-d9b4-7433-af76-646a3e6c8cf2/YourTube_2.0_Requirements_Tracker.xlsx) for feature status and review notes. Install dependencies with `npm ci` in both app folders; generated dependencies, local media, and `.env` files are excluded from this branch.
+## Local demo
 
-## Migration boundary
+With MongoDB and the API running, create sample accounts, videos, captions, and comments:
 
-The frontend now uses a responsive YouTube-style shell with one shared horizontal page gutter across the home feed, search, history, watch, downloads, membership, security, video rooms, owner channel, Liked videos, and Watch later pages. Feed chips sort the available uploads by recency or views.
+```sh
+npm --prefix server run demo:seed
+```
 
-The public `/uploads` route is removed. The clone's like, watch-later, and comment routes now use the signed-in session. The legacy comment post/edit/delete paths remain closed. Locked videos link to Membership. Room media controls are implemented, with live device and recording QA pending. Public channel profiles remain a later product slice; VidCircle's channel studio is owner-only. Silver and Gold hide the local demo ad placeholder; no external ad network is connected. Do not treat this branch as a deployable full VidCircle replacement yet. Existing accounts and videos from the original clone's database are not automatically migrated into the separate `yourtube2` database.
+The seed creates a **creator, viewer, and admin**, plus a Free captioned video, a Silver video, and Hindi and Spanish comments. It only accepts the loopback `yourtube2` database and local API. Generated credentials and record IDs are saved to the ignored, owner-readable `server/.local-data/demo/manifest.json`. Run it again without duplicating the fixtures.
+
+<details>
+<summary><strong>Mailpit for sign-in codes and receipts</strong></summary>
+
+An unfamiliar browser needs a one-time code. Install Mailpit, then start its local SMTP server and inbox from the repository root:
+
+```sh
+mkdir -p server/.local-data
+mailpit --listen 127.0.0.1:8025 --smtp 127.0.0.1:1025 --database server/.local-data/mailpit.db --disable-version-check
+```
+
+Read messages at **[http://127.0.0.1:8025](http://127.0.0.1:8025)**. The development preview sign-in does not need Mailpit.
+
+</details>
+
+<details>
+<summary><strong>Optional comment translation</strong></summary>
+
+Translation runs in a separate LibreTranslate process. With Python 3.11 installed, run:
+
+```sh
+python3.11 -m venv server/.local-data/translate-venv
+server/.local-data/translate-venv/bin/python -m pip install libretranslate==1.9.6
+npm --prefix server run translation
+```
+
+The first start downloads English, Hindi, and Spanish models. If this service is stopped, comments remain visible and translation requests show an error.
+
+</details>
+
+## Repository layout
+
+| Path | Purpose |
+| --- | --- |
+| [`yourtube/`](yourtube/) | Next.js Pages Router frontend |
+| [`server/`](server/) | Express API, MongoDB models, media processing, and room signalling |
+| [`DEMO_REVIEW.md`](DEMO_REVIEW.md) | VidCircle feature parity and browser demo journeys |
+| [`YourTube 2.0 requirements tracker`](outputs/01a0e3e8-d9b4-7433-af76-646a3e6c8cf2/YourTube_2.0_Requirements_Tracker.xlsx) | Feature status and review notes |
+
+## Checks
+
+Run these from the repository root:
+
+```sh
+npm --prefix server test
+npm --prefix yourtube run build
+```
+
+## Project status
+
+The latest local checkpoint passed **30 server integration tests** and the **frontend production build**. See [`DEMO_REVIEW.md`](DEMO_REVIEW.md) and the [requirements tracker](outputs/01a0e3e8-d9b4-7433-af76-646a3e6c8cf2/YourTube_2.0_Requirements_Tracker.xlsx) for the feature-by-feature review.
+
+- Browser walkthroughs for sign-in, playback, purchases, translation, and downloads remain to be recorded.
+- Three-browser room media, device changes, screen sharing, and recording need live QA. Rooms use a local WebRTC mesh without a TURN relay, so connections outside a local network are not guaranteed.
+- Public channel profiles, a real ad network, real payments, and migration of old clone database records are not included in this branch.
+- Keep `.env` files, generated dependencies, uploads, and `server/.local-data/` out of Git. Review dependency advisories before any production deployment.
+
+---
+
+Built from [BitHeadmr's YourTube clone](https://github.com/BitHeadmr/you_tube2.0) with VidCircle features migrated into its interface.
