@@ -1,7 +1,10 @@
 import express from "express";
-import { getallLikedVideo, handlelike } from "../Controllers/like.js";
+import { addLike, getallLikedVideo, removeLike } from "../controllers/like.js";
+import { requireAuth } from "../security/session.js";
 
 const routes = express.Router();
-routes.get("/:userId", getallLikedVideo);
-routes.post("/:videoId", handlelike);
+routes.use(requireAuth);
+routes.get("/me", getallLikedVideo);
+routes.put("/:videoId", addLike);
+routes.delete("/:videoId", removeLike);
 export default routes;

@@ -1,0 +1,22 @@
+import express from "express";
+import { deletecomment, editcomment, getallcomment, getCommentHistory, postcomment, reactToComment, searchMentions } from "../controllers/comment.js";
+import { getTranslationLanguages, translateComment } from "../controllers/comment-translation.js";
+import { moderationQueue, reportComment, reviewReport } from "../controllers/comment-moderation.js";
+import { requireAdmin, requireAuth } from "../security/session.js";
+
+const routes = express.Router();
+routes.use(requireAuth);
+routes.use((_request, response, next) => { response.set("Cache-Control", "private, no-store"); next(); });
+routes.get("/mentions", searchMentions);
+routes.get("/languages", getTranslationLanguages);
+routes.get("/moderation/queue", requireAdmin, moderationQueue);
+routes.post("/moderation/:id", requireAdmin, reviewReport);
+routes.get("/:id/history", getCommentHistory);
+routes.put("/:id/reaction", reactToComment);
+routes.post("/:id/translate", translateComment);
+routes.post("/:id/report", reportComment);
+routes.get("/:videoid", getallcomment);
+routes.post("/:videoid", postcomment);
+routes.patch("/:id", editcomment);
+routes.delete("/:id", deletecomment);
+export default routes;

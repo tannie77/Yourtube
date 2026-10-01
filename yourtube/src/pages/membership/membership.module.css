@@ -1,0 +1,205 @@
+.hero {
+  background: radial-gradient(circle at 81% 8%, rgba(255, 0, 51, 0.36), transparent 32%),
+    linear-gradient(118deg, #181818 4%, #101010 64%, #35121b 100%);
+  box-shadow: 0 22px 52px rgba(0, 0, 0, 0.13);
+}
+
+.heroGlow {
+  position: absolute;
+  width: 430px;
+  height: 430px;
+  right: 16%;
+  top: -220px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 50%;
+  box-shadow: 0 0 0 66px rgba(255, 255, 255, 0.025), 0 0 0 132px rgba(255, 255, 255, 0.018);
+  pointer-events: none;
+}
+
+.planCard {
+  min-width: 0;
+  border-color: var(--yt-border);
+  background: var(--yt-surface);
+  box-shadow: var(--yt-shadow);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.planCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 35px rgba(0, 0, 0, 0.11);
+}
+
+.featuredCard {
+  border-color: var(--yt-red);
+  box-shadow: 0 15px 36px rgba(255, 0, 51, 0.095);
+}
+
+.planIcon {
+  color: #66758a;
+  background: #f2f4f8;
+}
+
+.iconBronze {
+  color: #c47b51;
+  background: #fff0e5;
+}
+
+.iconSilver {
+  color: #d26b54;
+  background: #fff0ec;
+}
+
+.iconGold {
+  color: #a57c35;
+  background: #fff4d8;
+}
+
+.outcomeButton {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #dce1e8;
+  border-radius: 12px;
+  background: #fff;
+  padding: 0 14px;
+  color: #647084;
+  font-size: 12px;
+  font-weight: 700;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.outcomeButton:hover:not(:disabled) {
+  border-color: #abb4c1;
+  background: #f7f8fa;
+}
+
+.outcomeButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.successButton {
+  border-color: #b9dfc9;
+  background: #effaf3;
+  color: #2e805b;
+}
+
+.successButton:hover:not(:disabled) {
+  border-color: #7dbb98;
+  background: #e5f5eb;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.statuspending,
+.statusprocessing {
+  background: #fff3df;
+  color: #9d6d26;
+}
+
+.statuspaid {
+  background: #e7f6eb;
+  color: #327c55;
+}
+
+.statusfailed {
+  background: #fff0ec;
+  color: #b85e4c;
+}
+
+.statuscancelled {
+  background: #f1f3f6;
+  color: #6b7585;
+}
+
+:global(.dark) .featuredCard {
+  border-color: #80545c;
+}
+
+:global(.dark) .planIcon {
+  color: #c6d1e2;
+  background: #303b50;
+}
+
+:global(.dark) .iconBronze {
+  color: #efbc91;
+  background: #44382e;
+}
+
+:global(.dark) .iconSilver {
+  color: #ffab91;
+  background: #43313a;
+}
+
+:global(.dark) .iconGold {
+  color: #eed18e;
+  background: #443d2e;
+}
+
+:global(.dark) .outcomeButton {
+  border-color: #3b465f;
+  background: #263149;
+  color: #d6deeb;
+}
+
+:global(.dark) .outcomeButton:hover:not(:disabled) {
+  border-color: #65718a;
+  background: #303d55;
+}
+
+:global(.dark) .successButton {
+  border-color: #49685a;
+  background: #273d3a;
+  color: #91d7ae;
+}
+
+:global(.dark) .successButton:hover:not(:disabled) {
+  border-color: #67957b;
+  background: #315045;
+}
+
+:global(.dark) .statuspending,
+:global(.dark) .statusprocessing {
+  background: #493d2d;
+  color: #edc786;
+}
+
+:global(.dark) .statuspaid {
+  background: #273d3a;
+  color: #91d7ae;
+}
+
+:global(.dark) .statusfailed {
+  background: #43313a;
+  color: #ff9b87;
+}
+
+:global(.dark) .statuscancelled {
+  background: #303b50;
+  color: #aab5c8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .planCard {
+    transition: none;
+  }
+
+  .outcomeButton {
+    transition: none;
+  }
+
+  .planCard:hover {
+    transform: none;
+  }
+}

@@ -1,10 +1,10 @@
 import express from "express";
-import {
-  getallwatchlater,
-  handlewatchlater,
-} from "../Controllers/watchlater.js";
+import { addWatchLater, getallwatchlater, removeWatchLater } from "../controllers/watchlater.js";
+import { requireAuth } from "../security/session.js";
 
 const routes = express.Router();
-routes.get("/:userId", getallwatchlater);
-routes.post("/:videoId", handlewatchlater);
+routes.use(requireAuth);
+routes.get("/me", getallwatchlater);
+routes.put("/:videoId", addWatchLater);
+routes.delete("/:videoId", removeWatchLater);
 export default routes;

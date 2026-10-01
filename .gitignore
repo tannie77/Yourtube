@@ -1,0 +1,8 @@
+.DS_Store
+server/node_modules/
+server/.local-data/
+server/.env
+server/.env.local
+server/uploads/
+yourtube/node_modules/
+yourtube/.next/
