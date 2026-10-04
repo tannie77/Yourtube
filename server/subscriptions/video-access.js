@@ -12,6 +12,7 @@ export function requiredVideoPlan(video, now = new Date()) {
   const required = video.accessPlan ?? "free";
   if (!planIds.includes(required)) return null;
   if (isEarlyAccess(video, now)) return "gold";
+  if (video.isCourse) return "gold";
   const lowestQuality = video.renditions?.length ? video.renditions[0].quality : video.sourceQuality;
   const qualityRequired = qualityPlan[lowestQuality] || "free";
   return planIds[Math.max(planIds.indexOf(required), planIds.indexOf(qualityRequired))];

@@ -16,7 +16,9 @@ export interface VideoRecord {
   sourceQuality?: VideoQuality;
   qualityOptions?: { quality: VideoQuality; allowed: boolean; requiredPlanId: VideoAccessPlan }[];
   earlyAccessActive?: boolean;
+  isCourse?: boolean;
   showLocalAd?: boolean;
+  maxPlaybackSpeed?: number;
   hasCaptions?: boolean;
   mediaUnavailable?: boolean;
   likedByViewer?: boolean;

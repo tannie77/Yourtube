@@ -2,6 +2,10 @@
 
 Reviewed 1 October 2026 against VidCircle's `docs/MILESTONES.md` and the current YourTube 2.0 code. This is a local prototype checkpoint. An automated API pass establishes server behaviour; it does not certify the complete browser journey.
 
+## 4 October 2026 tracker update
+
+The red Partial and Not built tracker items now have implementations for monthly IST download quotas, optional trusted-browser download checks, Gold course and priority gates, plan-based playback speed and browser offline saves, invitation-key room media encryption, membership renewal status, Razorpay Test subscriptions and recurring charge webhooks, and configurable receipt delivery with printable test invoices. The local simulation remains available. Razorpay Test still needs provider approval and plan IDs; room media and offline playback after a fresh browser launch need device verification. Email delivery is paused at the user's request, so OTP and receipt mail journeys are on hold. The 1 October test record below is a historical checkpoint.
+
 ## Feature parity
 
 | VidCircle build | YourTube 2.0 route and implementation | Current evidence |
@@ -14,7 +18,7 @@ Reviewed 1 October 2026 against VidCircle's `docs/MILESTONES.md` and the current
 | 6 — Login security and themes | `/sign-in`, `/security`; Mailpit OTP, trusted browsers, sessions, test location and saved theme | Account/security integration tests pass. An unfamiliar-browser OTP journey still needs Mailpit and browser review. |
 | 7 — Video rooms | `/rooms`, `/rooms/[id]`; signalling, live chat/files, host controls, optional media, screen share and host local recording | Room signalling test passes. Three-browser media, device changes, sharing and recording remain hands-on QA; the user will test Mac camera and microphone. |
 
-Public channel profiles are a later YourTube product enhancement. VidCircle's channel studio is owner-only. Courses and a real ad network are outside the implemented VidCircle local prototype; the plan comparison labels courses as planned and the watch page labels the ad as a local placeholder.
+Public channel profiles are a later YourTube product enhancement. VidCircle's channel studio is owner-only. A real ad network is outside the implemented local prototype; the watch page labels the ad as a local placeholder. Gold course access was added after this checkpoint.
 
 ## Six end-to-end demo journeys
 
@@ -42,4 +46,4 @@ Public channel profiles are a later YourTube product enhancement. VidCircle's ch
 - Frontend production build: **pass** after the watch-page and membership edits. The local frontend and API both returned HTTP 200 after the preview restarted.
 - Demo seed: **pass twice**; API checks confirmed the Free video is captioned and watchable by the viewer, the Silver video is plan-locked, both comments are visible, and the admin moderation queue is accessible. Generated sources are H.264 MP4s at 720p and 1080p. The local API and sign-in page returned HTTP 200 after seeding.
 
-Next, start Mailpit and run the browser journeys with the seeded accounts. Record each journey's result in this table; treat room media as pending until the user's live-device results are available.
+Next, run the browser journeys with the seeded accounts. Email journeys should wait until the user asks to resume delivery. Record each journey's result in this table; treat room media as pending until the user's live-device results are available.

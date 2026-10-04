@@ -9,12 +9,9 @@ import {
   Eye,
   EyeOff,
   KeyRound,
-  Search,
-  Compass,
   LockKeyhole,
   Mail,
   MapPin,
-  Play,
   ShieldCheck,
   UserRound,
 } from "lucide-react";
@@ -124,7 +121,7 @@ export default function SignInPage() {
       <section className={styles.formSide}>
         <div className={styles.brandRow}>
           <div className={styles.brand} aria-label="YourTube">
-            <span className={styles.brandMark}><Play aria-hidden="true" fill="currentColor" strokeWidth={1.2} /></span>
+            <img className={styles.brandMark} src="/favicon.ico" alt="" />
             <span>YourTube</span>
           </div>
           <ThemeToggle />
@@ -132,11 +129,10 @@ export default function SignInPage() {
 
         <div className={styles.formWrap}>
           <div className={styles.formCard}>
-            <span className={styles.eyebrow}>YOURTUBE ACCOUNT</span>
             <h1>{otpChallenge ? "Check your inbox" : isRegistering ? "Create your account" : "Welcome back"}</h1>
             <p className={styles.intro}>
               {otpChallenge
-                ? `Enter the six-digit code captured for ${otpChallenge.destination} in your local Mailpit inbox.`
+                ? `${otpChallenge.message} Address: ${otpChallenge.destination}`
                 : isRegistering
                 ? "Join the community and start watching, sharing and creating."
                 : "Sign in to keep watching and make this space your own."}
@@ -199,7 +195,7 @@ export default function SignInPage() {
                     <KeyRound className={styles.inputIcon} aria-hidden="true" />
                     <input id="otp-code" name="otp-code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={otpCode} onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="000000" className={`${styles.input} ${styles.otpInput}`} aria-invalid={Boolean(error)} aria-describedby={error ? "auth-error" : "otp-help"} required autoFocus />
                   </div>
-                  <p id="otp-help" className={styles.otpHelp}><ShieldCheck aria-hidden="true" />The code expires in ten minutes and stays in the local Mailpit inbox.</p>
+                  <p id="otp-help" className={styles.otpHelp}><ShieldCheck aria-hidden="true" />The code expires in ten minutes.</p>
                 </div>
               )}
 
@@ -231,47 +227,6 @@ export default function SignInPage() {
         <div className={styles.footer}><span>© {new Date().getFullYear()} YourTube</span><span>Local prototype</span></div>
       </section>
 
-      <aside className={styles.showcase} aria-label="YourTube preview">
-        <div className={styles.showcaseHeading}>
-          <span className={styles.previewTag}>A look inside YourTube</span>
-          <span className={styles.previewStatus}>Preview</span>
-        </div>
-        <div className={styles.previewWindow} aria-hidden="true">
-          <div className={styles.previewTopbar}>
-            <span className={styles.previewLogo}><span><Play fill="currentColor" strokeWidth={1.2} /></span>YourTube</span>
-            <span className={styles.previewSearch}><Search /> Search</span>
-            <span className={styles.previewAvatar}>Y</span>
-          </div>
-          <div className={styles.previewBody}>
-            <div className={styles.previewRail}>
-              <span className={styles.railActive}><Play fill="currentColor" />Home</span>
-              <span><Compass />Explore</span>
-              <span><UserRound />You</span>
-            </div>
-            <div className={styles.previewFeed}>
-              <div className={styles.previewChips}><span>All</span><span>Music</span><span>Gaming</span><span>Learning</span></div>
-              <div className={styles.previewGrid}>
-                <div className={styles.featuredCard}>
-                  <div className={styles.featuredVisual}><span className={styles.mockPlay}><Play fill="currentColor" /></span><span className={styles.duration}>8:42</span></div>
-                  <div className={styles.previewCardText}><span className={styles.channelAvatar}>Y</span><span><strong>Your next favourite starts here</strong><small>YourTube · Watch and discover</small></span></div>
-                </div>
-                <div className={styles.smallCard}>
-                  <div className={`${styles.smallVisual} ${styles.smallVisualOne}`}><span className={styles.duration}>4:18</span></div>
-                  <div className={styles.previewCardText}><span className={styles.channelAvatar}>C</span><span><strong>Made to create</strong><small>Share your story</small></span></div>
-                </div>
-                <div className={styles.smallCard}>
-                  <div className={`${styles.smallVisual} ${styles.smallVisualTwo}`}><span className={styles.duration}>12:06</span></div>
-                  <div className={styles.previewCardText}><span className={styles.channelAvatar}>V</span><span><strong>Keep watching</strong><small>Find your community</small></span></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className={styles.showcaseCopy}>
-          <h2>A place for every video.</h2>
-          <p>Watch what you love. Share what you make.</p>
-        </div>
-      </aside>
     </main>
   );
 }

@@ -8,7 +8,7 @@
   <img alt="Next.js 15" src="https://img.shields.io/badge/Next.js-15.3.3-000000?logo=nextdotjs&logoColor=white">
   <img alt="React 19" src="https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white">
   <img alt="Express 5" src="https://img.shields.io/badge/Express-5-303030?logo=express&logoColor=white">
-  <img alt="MongoDB" src="https://img.shields.io/badge/MongoDB-local-47A248?logo=mongodb&logoColor=white">
+  <img alt="MongoDB" src="https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white">
 </p>
 
 <p align="center">
@@ -20,22 +20,22 @@
 </p>
 
 > [!NOTE]
-> This branch is a **local review build**. Checkout is simulated, the ad is a demo placeholder, and live room media still needs hands-on QA.
+> This branch runs the API against MongoDB Atlas. Razorpay Test subscriptions need provider approval and plan IDs. External email, city-level login locations, and reliable calls across restrictive networks need optional services. The ad is a demo placeholder.
 
 ## Features
 
 | Area | What is included |
 | --- | --- |
-| **Accounts & security** | Registration, password sign-in, session cookies, Mailpit one-time codes, trusted browsers, session controls, and owner-checked channel edits. |
+| **Accounts & security** | Registration, password sign-in, session cookies, Mailpit or external SMTP one-time codes, trusted browsers, session controls, optional GeoIP city lookup, and owner-checked channel edits. |
 | **Videos & player** | Signed-in feed and search, MP4 uploads, optional WebVTT captions, private previews, quality variants, protected streaming, watch progress, and playback controls. |
-| **Membership & downloads** | Free-to-Gold plans, simulated checkout, receipts, renewal and plan changes, viewing limits, protected downloads, and private download history. |
-| **Community** | Likes, Watch later, threaded comments, mentions, reactions, translation, reports, and admin moderation. |
-| **Video rooms** | Private rooms for up to four people, live chat and small files, host controls, optional camera and mic, screen sharing, and local recording. |
+| **Membership & downloads** | Free-to-Gold plans, local and credential-ready Razorpay Test checkout, recurring billing webhooks, test invoices and receipts, daily and monthly download limits, trusted-browser restriction, and a browser offline library for paid plans. |
+| **Community** | Likes, Watch later, threaded comments, mentions, reactions, English/Hindi/Spanish/French/Urdu translation, spam checks, optional Turnstile verification, reports, and admin moderation. |
+| **Video rooms** | Private rooms for up to four people, live chat and small files, host controls, optional camera and mic, screen sharing, local recording, adaptive camera quality, and invitation-key media encryption in supported browsers. |
 | **Interface** | Responsive YouTube-style pages with consistent spacing and light, dark, or automatic appearance. |
 
 ## Quick start
 
-You need **Node.js 22** and npm. Install `ffmpeg` and `ffprobe` if you want to upload videos or generate demo media. The local MongoDB runner downloads its binary on first use; a separate MongoDB installation is not required.
+You need **Node.js 22**, npm, and a MongoDB Atlas cluster. Install `ffmpeg` and `ffprobe` if you want to upload videos. In Atlas, create a database user with read/write access to the database and add this computer's public IP to the project's [IP Access List](https://www.mongodb.com/docs/atlas/security/ip-access-list/). Copy the [Drivers connection string](https://www.mongodb.com/docs/atlas/connect-to-database-deployment/) and put it in the ignored `server/.env` as `MONGODB_URI`. Replace the username and password placeholders, percent-encoding special characters in the password. Set `MONGODB_DB_NAME` to the database you want this app to use (default `yourtube2`). Do not commit the URI.
 
 ```sh
 git clone --branch codex/yourtube-2.0-migration-20261002 https://github.com/tannie77/Yourtube.git yourtube-2.0
@@ -43,29 +43,63 @@ cd yourtube-2.0
 npm --prefix server ci
 npm --prefix yourtube ci
 cp server/.env.example server/.env
+# Edit server/.env and set MONGODB_URI to your Atlas driver URI.
+npm --prefix server run db:check
 ```
 
-Start these commands in **three separate terminals**, from the repository root:
+Start these commands in **two separate terminals**, from the repository root:
 
 | Terminal | Command | Service |
 | --- | --- | --- |
-| 1 | `npm --prefix server run db` | Local MongoDB on `127.0.0.1:27017` |
-| 2 | `npm --prefix server start` | API on `127.0.0.1:5000` |
-| 3 | `npm --prefix yourtube run dev -- --hostname 127.0.0.1` | App on `127.0.0.1:3000` |
+| 1 | `npm --prefix server start` | API on `127.0.0.1:5000`, backed by Atlas |
+| 2 | `npm --prefix yourtube run dev -- --hostname 127.0.0.1` | App on `127.0.0.1:3000` |
 
 Open **[http://127.0.0.1:3000](http://127.0.0.1:3000)**. The sign-in page offers **Continue with local preview** in development, which creates a local demo account. Use `127.0.0.1` for both the app and API so session cookies behave consistently.
 
-The server's local defaults are in [`server/.env.example`](server/.env.example). The frontend uses `http://127.0.0.1:5000` by default; set `NEXT_PUBLIC_BACKEND_URL` if your API runs elsewhere. The app uses the separate `yourtube2` database and does not import accounts or videos from the original clone.
+The server configuration template is [`server/.env.example`](server/.env.example). Startup fails clearly if the Atlas URI is absent or a local MongoDB URL is supplied. The frontend uses `http://127.0.0.1:5000` by default; set `NEXT_PUBLIC_BACKEND_URL` if your API runs elsewhere. Atlas starts with its own data; existing local MongoDB accounts and records are **not automatically migrated**. Uploaded MP4s, captions and previews remain in `server/uploads/` on this computer, so moving the API to another machine also requires moving those files or adding shared media storage.
 
-## Local demo
+If Node reports refused Atlas SRV lookups even though the hostname resolves in Windows, set `MONGODB_DNS_SERVERS` in `server/.env` to DNS resolver IPs such as `1.1.1.1,8.8.8.8` and retry `db:check`.
 
-With MongoDB and the API running, create sample accounts, videos, captions, and comments:
+### Copy existing local data to Atlas
 
-```sh
-npm --prefix server run demo:seed
+The migration tool copies every `yourtube2` collection, preserving document IDs and indexes. It refuses an Atlas destination that already contains records and never deletes the local database. Keep the old local MongoDB process running for the copy, but stop the old API first so records do not change mid-copy. With `MONGODB_URI` and `MONGODB_DB_NAME` set in `server/.env`, run:
+
+```powershell
+npm --prefix server run db:migrate -- --source-only
+npm --prefix server run db:migrate -- --preflight
+npm --prefix server run db:migrate -- --apply
+npm --prefix server run db:check
 ```
 
-The seed creates a **creator, viewer, and admin**, plus a Free captioned video, a Silver video, and Hindi and Spanish comments. It only accepts the loopback `yourtube2` database and local API. Generated credentials and record IDs are saved to the ignored, owner-readable `server/.local-data/demo/manifest.json`. Run it again without duplicating the fixtures.
+The source-only step also checks every referenced video, rendition, caption and preview file in `server/uploads/`. The migration copies database records, **not the media files**; those files stay in this project folder. Start the Atlas-backed API only after the copy verifies. If the destination is not empty, inspect its records before deciding on a merge; the tool will not overwrite them.
+
+### Optional Razorpay Test and email
+
+To enable Razorpay Test checkout, fill in `RAZORPAY_TEST_KEY_ID`, `RAZORPAY_TEST_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, and all nine plan IDs in `server/.env`. Create one matching [Razorpay Test plan](https://razorpay.com/docs/api/payments/subscriptions/create-plan/) for each Bronze, Silver, and Gold billing period. Register the `/subscriptions/razorpay/webhook` endpoint for `subscription.charged`, `subscription.cancelled`, `subscription.completed`, and `subscription.halted`. The webhook must be reachable by Razorpay; a local-only URL cannot receive provider callbacks. The app verifies checkout and webhook signatures before membership activation. A Razorpay Test checkout activates access only after a captured charge webhook, and recurring charges update the expiry and billing history.
+
+Receipts and sign-in codes use Mailpit by default. Receipts include a printable HTML test invoice attachment. For external delivery, set `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, and `SMTP_FROM` in `server/.env`. External SMTP requires TLS. Set `SUPPORT_EMAIL` and the `INVOICE_SELLER_*` fields for invoice details. All payments here are tests, so the printable invoice remains clearly marked as a **test document**, not a legally valid tax invoice.
+
+Email delivery is currently paused with `EMAIL_DELIVERY_DISABLED=true` in the ignored `server/.env`. This blocks both OTP and receipt messages before any SMTP connection. Existing trusted sessions still work, but signing in from a new browser or device cannot complete until delivery is explicitly resumed. Set the value to `false` and restart the API only when you want email delivery again.
+
+Rooms created from the app generate a secret in the invitation URL fragment. Share the complete link. The API stores only a digest of the secret; the browser uses it to encrypt encoded audio and video frames. Browsers without WebRTC encoded transforms cannot join encrypted rooms. Legacy rooms still use WebRTC transport encryption. Chat, small files, and local recordings are outside the media encryption layer.
+
+Calls use `stun:stun.cloudflare.com:3478` by default. Set `ROOM_TURN_URLS`, `ROOM_TURN_USERNAME`, and `ROOM_TURN_CREDENTIAL` in `server/.env` for a TURN relay when calls must work across restrictive networks. Multiple STUN or TURN URLs are comma separated. The call page reduces camera resolution automatically when WebRTC reports sustained poor outbound quality. Test microphone, camera, switching, screen sharing, and reconnection with the actual browsers and networks you will use.
+
+The security page records browser, OS, device, IP, and login attempts. For automatic city, state, country, and approximate coordinates, obtain a GeoLite2 City/GeoIP2 City `.mmdb` file and set its absolute path as `GEOIP_CITY_DB_PATH` in `server/.env`. Local and private IP addresses do not have a public GeoIP location. If the API runs behind a reverse proxy, list only its exact IP address in `TRUSTED_PROXY_IPS` so forwarded IP headers cannot be supplied directly by clients. Without a city database, the location fields remain empty while login and OTP checks continue to work.
+
+For real CAPTCHA after repeated comment posts, configure both `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` in `server/.env`. The backend verifies tokens with Turnstile before accepting the post. Without both keys, the local arithmetic challenge remains active. The comment filter also blocks links, repeated symbols and emoji, abusive terms, excessive mentions, and near-identical repeat posts.
+
+## Optional Atlas demo data
+
+To try the Atlas-backed app without sample data, register an account and upload a video through the UI. If you want fixture accounts and videos, first set `MONGODB_DB_NAME=yourtube2_demo` in `server/.env` and start the API with that same setting. Then run:
+
+```powershell
+$env:ALLOW_ATLAS_DEMO_SEED = "true"
+npm --prefix server run demo:seed
+Remove-Item Env:ALLOW_ATLAS_DEMO_SEED
+```
+
+The seed refuses the main `yourtube2` database. It creates a **creator, viewer, and admin**, plus a Free captioned video, a Silver video, and Hindi and Spanish comments in the separate Atlas demo database. Generated credentials and record IDs are saved to the ignored, owner-readable `server/.local-data/demo/manifest-yourtube2_demo.json`. Run it again without duplicating the fixtures.
 
 <details>
 <summary><strong>Mailpit for sign-in codes and receipts</strong></summary>
@@ -84,15 +118,25 @@ Read messages at **[http://127.0.0.1:8025](http://127.0.0.1:8025)**. The develop
 <details>
 <summary><strong>Optional comment translation</strong></summary>
 
-Translation runs in a separate LibreTranslate process. With Python 3.11 installed, run:
+Translation runs in a separate LibreTranslate process. With Python 3.11 installed, run on Windows PowerShell:
+
+```powershell
+py -3.11 -m venv server/.local-data/translate-venv
+server/.local-data/translate-venv/Scripts/python.exe -m pip install libretranslate==1.9.6
+server/.local-data/translate-venv/Scripts/python.exe server/scripts/install-translation-models.py
+npm --prefix server run translation
+```
+
+On macOS or Linux, use:
 
 ```sh
 python3.11 -m venv server/.local-data/translate-venv
 server/.local-data/translate-venv/bin/python -m pip install libretranslate==1.9.6
+server/.local-data/translate-venv/bin/python server/scripts/install-translation-models.py
 npm --prefix server run translation
 ```
 
-The first start downloads English, Hindi, and Spanish models. If this service is stopped, comments remain visible and translation requests show an error.
+The model installer downloads English pairs for Hindi, Spanish, French, and Urdu into ignored local data. If this service is stopped, comments remain visible and translation requests show an error.
 
 </details>
 
@@ -116,11 +160,11 @@ npm --prefix yourtube run build
 
 ## Project status
 
-The latest local checkpoint passed **30 server integration tests** and the **frontend production build**. See [`DEMO_REVIEW.md`](DEMO_REVIEW.md) and the [requirements tracker](outputs/01a0e3e8-d9b4-7433-af76-646a3e6c8cf2/YourTube_2.0_Requirements_Tracker.xlsx) for the feature-by-feature review.
+The server integration tests and frontend production build should be run after configuration changes. See [`DEMO_REVIEW.md`](DEMO_REVIEW.md) and the [requirements tracker](outputs/01a0e3e8-d9b4-7433-af76-646a3e6c8cf2/YourTube_2.0_Requirements_Tracker.xlsx) for the feature-by-feature review.
 
-- Browser walkthroughs for sign-in, playback, purchases, translation, and downloads remain to be recorded.
-- Three-browser room media, device changes, screen sharing, and recording need live QA. Rooms use a local WebRTC mesh without a TURN relay, so connections outside a local network are not guaranteed.
-- Public channel profiles, a real ad network, real payments, and migration of old clone database records are not included in this branch.
+- MongoDB Atlas needs a valid database user, URI and IP Access List entry. Razorpay Test plans are pending provider approval; external SMTP, GeoIP City data, and a TURN relay each need their own configuration. Calls outside a local network are not guaranteed without a relay.
+- The offline library stores copies in the current browser profile. Clearing browser site data removes them. The app still needs a network connection to load and check membership after a fresh browser launch; offline playback works while an authenticated app session remains open.
+- Public channel profiles, a real ad network, live payments, and migration of old clone database records are not included in this branch.
 - Keep `.env` files, generated dependencies, uploads, and `server/.local-data/` out of Git. Review dependency advisories before any production deployment.
 
 ---

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Search, SearchX } from "lucide-react";
 import axiosInstance from "@/lib/axiosinstance";
 import { useUser } from "@/lib/AuthContext";
@@ -27,6 +28,7 @@ export default function SearchResult({ query }: { query: string }) {
 
   if (!query.trim()) return <EmptyState icon={Search} title="What would you like to watch?" description="Use the search bar above to find videos and creators." />;
   if (authLoading || loading) return <p className="yt-subtle py-12 text-center text-sm">Searching videos…</p>;
+  if (!user) return <EmptyState icon={Search} title="Sign in to search videos" description="Explore videos from YourTube creators after signing in." action={<Link href="/sign-in" className="yt-empty-action">Sign in</Link>} />;
   if (error) return <EmptyState icon={SearchX} title="Search is unavailable" description="Please refresh the page and try again." />;
   const term = query.toLocaleLowerCase();
   const results = videos.filter((video) => video.videotitle.toLocaleLowerCase().includes(term) || video.videochanel.toLocaleLowerCase().includes(term));

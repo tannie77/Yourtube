@@ -3,8 +3,10 @@ import path from "node:path";
 import mongoose from "mongoose";
 import Video from "../Modals/video.js";
 import DownloadRecord from "../Modals/DownloadRecord.js";
+import TrustedDevice from "../Modals/TrustedDevice.js";
 import { uploadDirectory } from "../filehelp/filehelp.js";
 import { readSubscription } from "../subscriptions/state.js";
+import { clientContext } from "../security/client-context.js";
 import { availableQualities, canWatchVideo, requiredVideoPlan } from "../subscriptions/video-access.js";
 import { assetStem } from "../video/assets.js";
 import { acquireDownloadWindow, downloadUsageSnapshot, finishDownload, reserveDownload, settleDownloadWindow } from "../video/download-usage.js";
@@ -92,6 +94,19 @@ export async function downloadVideo(request, response, next) {
     const video = await withMetadata(stored);
     if (video.mediaUnavailable) return response.status(404).json({ message: "Video file unavailable." });
 
+    if (request.user.restrictDownloadsToTrustedDevices) {
+      const trustedDeviceId = request.sessionRecord.trustedDeviceId;
+      const trusted = trustedDeviceId && await TrustedDevice.exists({
+        _id: trustedDeviceId, userId: request.user._id,
+        deviceHash: clientContext(request).deviceHash,
+        expiresAt: { $gt: requestStartedAt },
+      });
+      if (!trusted) return response.status(403).json({
+        code: "TRUSTED_DEVICE_REQUIRED",
+        message: "Downloads are limited to your trusted browsers. Sign in and verify this browser with a code, or change the setting in Security.",
+      });
+    }
+
     const subscription = await readSubscription(request.user._id, requestStartedAt);
     if (!canWatchVideo(video, request.user, subscription, requestStartedAt)) {
       return response.status(403).json({ code: "PLAN_REQUIRED", requiredPlanId: requiredVideoPlan(video, requestStartedAt), message: "This video needs a higher membership plan." });
@@ -124,7 +139,9 @@ export async function downloadVideo(request, response, next) {
       reservation = await reserveDownload(request.user._id, subscription, requestStartedAt);
       if (!reservation.allowed) {
         await settleDownloadWindow(window, false);
-        return response.status(429).json({ code: "DOWNLOAD_LIMIT_REACHED", message: "Today's download allowance is used up. Try again after midnight IST or choose a higher plan." });
+        return response.status(429).json(reservation.reason === "monthly"
+          ? { code: "MONTHLY_DOWNLOAD_LIMIT_REACHED", message: "This month's download allowance is used up. It resets at the next IST month or when you choose a higher plan." }
+          : { code: "DOWNLOAD_LIMIT_REACHED", message: "Today's download allowance is used up. Try again after midnight IST or choose a higher plan." });
       }
       const userAgent = String(request.headers["user-agent"] || "").slice(0, 512);
       record = await DownloadRecord.create({
@@ -151,7 +168,7 @@ export async function downloadVideo(request, response, next) {
         );
         if (!changed.modifiedCount) return;
         const usage = await finishDownload(reservation, completed);
-        if (!usage.matchedCount) console.error("Download record completed but its daily counter was not updated:", String(record._id));
+        if (!usage.matchedCount) console.error("Download record completed but a quota counter was not updated:", String(record._id));
         await settleDownloadWindow(window, completed, finishedAt);
       } catch (error) {
         console.error("Could not finalise download:", error);

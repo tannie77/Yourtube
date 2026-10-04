@@ -7,8 +7,8 @@ import WatchProgress from "../Modals/WatchProgress.js";
 import Like from "../Modals/like.js";
 import WatchLater from "../Modals/watchlater.js";
 import { maxCaptionBytes, uploadDirectory } from "../filehelp/filehelp.js";
-import { planIds } from "../subscriptions/plans.js";
-import { readSubscription } from "../subscriptions/state.js";
+import { findPlan, planIds } from "../subscriptions/plans.js";
+import { isActive, readSubscription } from "../subscriptions/state.js";
 import { availableQualities, canWatchVideo, isEarlyAccess, requiredVideoPlan, showLocalAd } from "../subscriptions/video-access.js";
 import { assetStem, generateAssets, removeGeneratedAssets } from "../video/assets.js";
 import { probeVideo } from "../video/metadata.js";
@@ -27,7 +27,9 @@ export function publicVideo(record, user, subscription) {
     qualityOptions: availableQualities(value, user, subscription).map(({ filename: _filename, ...option }) => option),
     hasCaptions: Boolean(value.captionFilename),
     earlyAccessActive: isEarlyAccess(value),
+    isCourse: Boolean(value.isCourse),
     showLocalAd: showLocalAd(subscription),
+    maxPlaybackSpeed: findPlan(isActive(subscription) ? subscription.planId : "free").features.maxPlaybackSpeed,
   };
 }
 
@@ -88,6 +90,11 @@ export const uploadvideo = async (req, res) => {
     await removeInputs();
     return res.status(400).json({ message: "Choose a valid early-access option." });
   }
+  const isCourse = req.body?.isCourse === "true";
+  if (req.body?.isCourse && !["true", "false"].includes(req.body.isCourse)) {
+    await removeInputs();
+    return res.status(400).json({ message: "Choose a valid course option." });
+  }
 
   let saved;
   try {
@@ -135,6 +142,7 @@ export const uploadvideo = async (req, res) => {
       ...assets,
       captionFilename: captionFile?.filename || null,
       earlyAccessUntil: earlyAccess ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) : null,
+      isCourse,
     });
     const subscription = await readSubscription(req.user._id);
     return res.status(201).json({ video: publicVideo(saved, req.user, subscription) });

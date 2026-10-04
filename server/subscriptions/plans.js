@@ -13,8 +13,10 @@ export const plans = [
     pricesPaise: { monthly: 0, quarterly: 0, yearly: 0 },
     features: {
       maxQuality: "480p",
+      maxPlaybackSpeed: 1.25,
       dailyWatchMinutes: 60,
       dailyDownloads: 1,
+      monthlyDownloads: 20,
       premiumAccess: "Selected previews",
       earlyAccess: false,
       exclusiveCourses: false,
@@ -28,8 +30,10 @@ export const plans = [
     pricesPaise: { monthly: 9900, quarterly: 26900, yearly: 99900 },
     features: {
       maxQuality: "720p",
+      maxPlaybackSpeed: 1.5,
       dailyWatchMinutes: 180,
       dailyDownloads: 3,
+      monthlyDownloads: 60,
       premiumAccess: "Selected videos",
       earlyAccess: false,
       exclusiveCourses: false,
@@ -43,8 +47,10 @@ export const plans = [
     pricesPaise: { monthly: 19900, quarterly: 54900, yearly: 199900 },
     features: {
       maxQuality: "1080p",
+      maxPlaybackSpeed: 2,
       dailyWatchMinutes: 360,
       dailyDownloads: 10,
+      monthlyDownloads: 200,
       premiumAccess: "All premium videos",
       earlyAccess: false,
       exclusiveCourses: false,
@@ -58,8 +64,10 @@ export const plans = [
     pricesPaise: { monthly: 29900, quarterly: 82900, yearly: 299900 },
     features: {
       maxQuality: "4K",
+      maxPlaybackSpeed: 2,
       dailyWatchMinutes: null,
       dailyDownloads: 25,
+      monthlyDownloads: 500,
       premiumAccess: "All premium videos",
       earlyAccess: true,
       exclusiveCourses: true,

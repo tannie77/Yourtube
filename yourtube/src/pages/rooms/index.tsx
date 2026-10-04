@@ -25,8 +25,11 @@ export default function RoomsPage() {
     setCreateError("");
     setBusy(true);
     try {
-      const response = await axiosInstance.post<{ room: RoomInfo }>("/rooms", { title: title.trim() });
-      await router.push(`/rooms/${response.data.room.id}`);
+      const key = crypto.getRandomValues(new Uint8Array(32));
+      const digest = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", key)), (byte) => byte.toString(16).padStart(2, "0")).join("");
+      const secret = btoa(String.fromCharCode(...key)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+      const response = await axiosInstance.post<{ room: RoomInfo }>("/rooms", { title: title.trim(), e2eeKeyDigest: digest });
+      await router.push(`/rooms/${response.data.room.id}#e2ee=${secret}`);
     } catch (error) {
       setCreateError(errorMessage(error, "Could not create the room. Try again."));
       setBusy(false);
@@ -40,7 +43,7 @@ export default function RoomsPage() {
       const url = new URL(link.trim(), window.location.origin);
       const match = /^\/rooms\/([A-Za-z0-9_-]{24})\/?$/.exec(url.pathname);
       if (url.origin !== window.location.origin || !match) throw new Error("Invalid room link");
-      void router.push(`/rooms/${match[1]}`);
+      void router.push(`/rooms/${match[1]}${url.hash}`);
     } catch {
       setJoinError("Paste a YourTube room link or a /rooms/… path from this app.");
     }
@@ -49,15 +52,14 @@ export default function RoomsPage() {
   return <main className="yt-page">
     <section className={styles.hero} aria-labelledby="rooms-heading">
       <div className={styles.heroCopy}>
-        <span className={styles.eyebrow}><span /> Connect together</span>
         <h1 id="rooms-heading">A place to <em>meet.</em></h1>
-        <p>Create a private room and invite up to three other signed-in people. Share a link when you are ready.</p>
+        <p>Create a private room and invite up to three other signed-in people. The complete invitation link carries the media encryption key.</p>
         <div className={styles.heroFacts}><span><LockKeyhole aria-hidden="true" /> Account access</span><span><UsersRound aria-hidden="true" /> Up to 4 people</span></div>
       </div>
       <div className={styles.heroArt} aria-hidden="true"><span className={styles.orbitOne} /><span className={styles.orbitTwo} /><span className={styles.heroPlay}><Video /></span></div>
     </section>
 
-    <div className={styles.pageIntro}><span className="yt-page-eyebrow">Your rooms</span><h2>Start or join a room</h2><p>Rooms are private to people who have the link and a YourTube account.</p></div>
+    <div className={styles.pageIntro}><h2>Start or join a room</h2><p>Rooms are private to people who have the link and a YourTube account.</p></div>
     <div className={styles.formGrid}>
       <form className={styles.formCard} onSubmit={createRoom}>
         <span className={styles.formIcon}><Plus aria-hidden="true" /></span>

@@ -1,17 +1,16 @@
 import Comment from "../Modals/comment.js";
 import CommentTranslation from "../Modals/CommentTranslation.js";
 import { accessibleVideo, validCommentId } from "../security/comment-access.js";
-
-const languages = { en: "English", hi: "Hindi", es: "Spanish" };
+import { commentLanguages } from "../comments/languages.js";
 
 export function getTranslationLanguages(_request, response) {
-  return response.json({ languages });
+  return response.json({ languages: commentLanguages });
 }
 
 export async function translateComment(request, response) {
   if (!validCommentId(request.params.id)) return response.status(404).json({ message: "Comment not found." });
   const language = request.body?.targetLanguage ?? request.user.preferredLanguage ?? "en";
-  if (!Object.hasOwn(languages, language)) return response.status(400).json({ message: "Choose English, Hindi or Spanish." });
+  if (!Object.hasOwn(commentLanguages, language)) return response.status(400).json({ message: "Choose an available translation language." });
 
   try {
     const comment = await Comment.findById(request.params.id).select("commentbody videoid deletedAt revision");

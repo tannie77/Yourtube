@@ -3,7 +3,7 @@ import LoginAttempt from "../Modals/LoginAttempt.js";
 import Session from "../Modals/Session.js";
 import TrustedDevice from "../Modals/TrustedDevice.js";
 import User from "../Modals/Auth.js";
-import { publicClientContext } from "../security/client-context.js";
+import { clientContext, publicClientContext } from "../security/client-context.js";
 import { clearSessionCookie } from "../security/session.js";
 
 function publicSession(session, currentSessionId) {
@@ -53,7 +53,8 @@ export async function securityOverview(request, response) {
       trustedDevices: trustedDevices.map((device) => publicTrustedDevice(device, currentTrustedDeviceId)),
       attempts: attempts.map(publicAttempt),
       themePreference: request.user.themePreference || "automatic",
-      note: "IP and location values describe this local prototype only. Test city/state are supplied by the user.",
+      restrictDownloadsToTrustedDevices: Boolean(request.user.restrictDownloadsToTrustedDevices),
+      note: process.env.GEOIP_CITY_DB_PATH ? "GeoIP locations are approximate and may be unavailable for private addresses. Test city/state are user supplied." : "Automatic location needs a City GeoIP database. Test city/state are user supplied.",
     });
   } catch (error) {
     console.error("Security overview failed:", error);
@@ -108,5 +109,28 @@ export async function updateTheme(request, response) {
   } catch (error) {
     console.error("Theme preference update failed:", error);
     return response.status(500).json({ message: "Could not save the theme preference." });
+  }
+}
+
+export async function updateDownloadSecurity(request, response) {
+  const enabled = request.body?.restrictDownloadsToTrustedDevices;
+  if (typeof enabled !== "boolean") return response.status(400).json({ message: "Choose whether downloads require a trusted browser." });
+  try {
+    if (enabled) {
+      const trustedDeviceId = request.sessionRecord.trustedDeviceId;
+      const trusted = trustedDeviceId && await TrustedDevice.exists({
+        _id: trustedDeviceId, userId: request.user._id,
+        deviceHash: clientContext(request).deviceHash,
+        expiresAt: { $gt: new Date() },
+      });
+      if (!trusted) return response.status(409).json({ message: "Verify this browser with a sign-in code before restricting downloads." });
+    }
+    const user = await User.findByIdAndUpdate(request.user._id,
+      { $set: { restrictDownloadsToTrustedDevices: enabled } },
+      { returnDocument: "after", runValidators: true });
+    return response.json({ restrictDownloadsToTrustedDevices: Boolean(user.restrictDownloadsToTrustedDevices) });
+  } catch (error) {
+    console.error("Download security update failed:", error);
+    return response.status(500).json({ message: "Could not save download security." });
   }
 }

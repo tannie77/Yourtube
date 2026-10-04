@@ -28,13 +28,17 @@ type ClientContext = {
   deviceModel: string;
   testCity: string;
   testState: string;
+  city: string;
+  state: string;
+  country: string;
+  approximateLocation: string;
 };
 
 type Session = ClientContext & { id: string; current: boolean; createdAt: string; lastSeenAt: string; expiresAt: string };
 type TrustedDevice = ClientContext & { id: string; current: boolean; verifiedAt: string; lastUsedAt: string; expiresAt: string };
 type Attempt = ClientContext & { id: string; eventType: string; outcome: string; successful: boolean; occurredAt: string };
 type ThemePreference = "automatic" | "light" | "dark";
-type SecurityOverview = { sessions: Session[]; trustedDevices: TrustedDevice[]; attempts: Attempt[]; themePreference: ThemePreference; note: string };
+type SecurityOverview = { sessions: Session[]; trustedDevices: TrustedDevice[]; attempts: Attempt[]; themePreference: ThemePreference; restrictDownloadsToTrustedDevices: boolean; note: string };
 
 const outcomeLabels: Record<string, string> = {
   signed_in: "Password accepted",
@@ -66,8 +70,10 @@ function contextTitle(context: ClientContext) {
 }
 
 function contextLocation(context: ClientContext) {
+  const automatic = [context.city, context.state, context.country].filter(Boolean).join(", ");
+  if (automatic) return `${automatic}${context.approximateLocation ? ` · approx. ${context.approximateLocation}` : ""}`;
   const location = [context.testCity, context.testState].filter(Boolean).join(", ");
-  return location ? `${location} · test location` : "No test location supplied";
+  return location ? `${location} · test location` : "Location unavailable";
 }
 
 function errorMessage(error: unknown, fallback: string) {
@@ -181,6 +187,23 @@ export default function SecurityPage() {
     }
   }
 
+  async function chooseDownloadSecurity(enabled: boolean) {
+    setBusyId("download-security");
+    setError("");
+    setNotice("");
+    try {
+      const response = await axiosInstance.patch<{ restrictDownloadsToTrustedDevices: boolean }>(
+        "/user/preferences/download-security", { restrictDownloadsToTrustedDevices: enabled });
+      setOverview((current) => current ? { ...current,
+        restrictDownloadsToTrustedDevices: response.data.restrictDownloadsToTrustedDevices } : current);
+      setNotice(enabled ? "Downloads now require a trusted browser." : "Downloads are allowed from any signed-in browser, subject to your plan quotas.");
+    } catch (caught) {
+      setError(errorMessage(caught, "Could not save download security."));
+    } finally {
+      setBusyId("");
+    }
+  }
+
   function saveTestLocation() {
     saveLocalTestLocation(testCity, testState);
     setError("");
@@ -191,7 +214,6 @@ export default function SecurityPage() {
     <main className={`yt-page ${styles.page}`}>
       <div className="yt-page-header">
         <div>
-          <span className="yt-page-eyebrow">Your account</span>
           <h1 className="yt-page-title">Security and appearance</h1>
           <p className="yt-page-description">Manage where you are signed in and how YourTube looks.</p>
         </div>
@@ -255,6 +277,10 @@ export default function SecurityPage() {
                   {busyId === device.id ? <LoaderCircle className={styles.spin} aria-hidden="true" /> : <Trash2 aria-hidden="true" />}
                 </button>
               </div>) : <p className={styles.empty}>No trusted browsers remain.</p>}</div>
+              <label className="mt-5 flex cursor-pointer items-start gap-3 border-t border-[var(--yt-border)] pt-4 text-sm">
+                <input type="checkbox" className="mt-1 accent-[var(--yt-red)]" checked={overview.restrictDownloadsToTrustedDevices} disabled={Boolean(busyId)} onChange={(event) => void chooseDownloadSecurity(event.target.checked)} />
+                <span><strong className="block">Require a trusted browser for downloads</strong><small className="mt-1 block text-[var(--yt-muted)]">When enabled, each download must come from a browser verified with a sign-in code. Daily and monthly limits still apply.</small></span>
+              </label>
             </section>
 
             <section className={styles.card} aria-labelledby="location-heading">
@@ -280,11 +306,11 @@ export default function SecurityPage() {
           <section className={styles.card} aria-labelledby="activity-heading">
             <div className={styles.cardHeading}><div><h2 id="activity-heading"><Clock3 aria-hidden="true" />Recent sign-in activity</h2><p>Password and OTP events for this account, newest first. Times are shown in IST.</p></div></div>
             {overview.attempts.length === 0 ? <p className={styles.empty}>No sign-in activity recorded yet.</p> : <div className={styles.tableScroll}><table className={styles.activityTable}>
-              <thead><tr><th>Result</th><th>Browser and device</th><th>Test location</th><th>When</th></tr></thead>
+              <thead><tr><th>Result</th><th>Browser and device</th><th>Approximate location</th><th>When</th></tr></thead>
               <tbody>{overview.attempts.map((attempt) => <tr key={attempt.id}>
                 <td><span className={styles.outcome} data-result={attempt.successful ? "success" : attempt.outcome === "otp_required" ? "pending" : "failed"}>{outcomeLabels[attempt.outcome] || attempt.outcome}</span></td>
                 <td><strong>{contextTitle(attempt)}</strong><small>{attempt.os || "Unknown OS"} · IP {attempt.ip || "unavailable"}</small></td>
-                <td>{[attempt.testCity, attempt.testState].filter(Boolean).join(", ") || "Not supplied"}</td>
+                <td>{contextLocation(attempt)}</td>
                 <td>{formatDate(attempt.occurredAt)}</td>
               </tr>)}</tbody>
             </table></div>}

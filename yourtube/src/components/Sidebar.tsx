@@ -1,4 +1,4 @@
-import { Clock3, Crown, Download, Flag, History, Home, ShieldCheck, ThumbsUp, UserRound, Video } from "lucide-react";
+import { Clock3, Compass, Crown, Download, Flag, History, Home, ShieldCheck, ThumbsUp, UserRound, Video, TvMinimalPlay } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useUser } from "@/lib/AuthContext";
@@ -21,8 +21,10 @@ export default function Sidebar({ onNavigate }: { onNavigate: () => void }) {
       <nav>
         <div className="yt-nav-section">
           <NavItem href="/" label="Home" icon={Home} active={router.pathname === "/"} onNavigate={onNavigate} />
+          <NavItem href="/explore" label="Explore" icon={Compass} active={router.pathname === "/explore"} onNavigate={onNavigate} />
+          <NavItem href="/subscriptions" label="Subscriptions" icon={TvMinimalPlay} active={router.pathname === "/subscriptions"} onNavigate={onNavigate} />
         </div>
-        <div className="yt-nav-section">
+        {user && <div className="yt-nav-section">
           <p className="yt-nav-heading">You</p>
           {user?.channelname && <NavItem href={`/channel/${user._id}`} label="Your channel" icon={UserRound} active={router.pathname === "/channel/[id]"} onNavigate={onNavigate} />}
           <NavItem href="/history" label="History" icon={History} active={router.pathname === "/history"} onNavigate={onNavigate} />
@@ -33,9 +35,8 @@ export default function Sidebar({ onNavigate }: { onNavigate: () => void }) {
           <NavItem href="/rooms" label="Video rooms" icon={Video} active={router.pathname === "/rooms" || router.pathname === "/rooms/[id]"} onNavigate={onNavigate} />
           <NavItem href="/security" label="Security" icon={ShieldCheck} active={router.pathname === "/security"} onNavigate={onNavigate} />
           {user?.role === "admin" && <NavItem href="/moderation" label="Moderation" icon={Flag} active={router.pathname === "/moderation"} onNavigate={onNavigate} />}
-        </div>
+        </div>}
       </nav>
-      <div className="yt-sidebar-footer">Watch · Create · Connect<br />YourTube 2.0</div>
     </aside>
   );
 }

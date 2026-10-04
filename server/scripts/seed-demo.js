@@ -9,12 +9,13 @@ import mongoose from "mongoose";
 import User from "../Modals/Auth.js";
 import Video from "../Modals/video.js";
 import Comment from "../Modals/comment.js";
+import { atlasConfiguration } from "../database/atlas.js";
 
 const run = promisify(execFile);
 const serverDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const fixtureDirectory = path.join(serverDirectory, ".local-data", "demo");
-const manifestPath = path.join(fixtureDirectory, "manifest.json");
-const databaseUrl = process.env.LOCAL_DB_URL || process.env.DB_URL || "mongodb://127.0.0.1:27017/yourtube2";
+const { uri: databaseUrl, dbName } = atlasConfiguration();
+const manifestPath = path.join(fixtureDirectory, `manifest-${dbName}.json`);
 const apiUrl = new URL(`http://127.0.0.1:${Number(process.env.PORT) || 5000}`);
 const userAgent = "YourTubeDemoFixture/1.0";
 
@@ -32,14 +33,12 @@ const comments = {
   spanish: { account: "admin", body: "Hola, este vídeo muestra la conversación local." },
 };
 
-function checkLocalTargets() {
-  const database = new URL(databaseUrl);
-  if (database.protocol !== "mongodb:" || !["127.0.0.1", "localhost"].includes(database.hostname) ||
-      database.port !== "27017" || database.pathname !== "/yourtube2" || database.username || database.password || database.search) {
-    throw new Error("Demo seeding requires the unauthenticated local yourtube2 database on port 27017.");
+function checkDemoTarget() {
+  if (process.env.ALLOW_ATLAS_DEMO_SEED !== "true" || !dbName.endsWith("_demo")) {
+    throw new Error("Demo seeding requires ALLOW_ATLAS_DEMO_SEED=true and an Atlas MONGODB_DB_NAME ending in _demo.");
   }
   if (!Number.isInteger(Number(process.env.PORT || 5000)) || Number(process.env.PORT || 5000) !== 5000) {
-    throw new Error("Demo seeding requires the local API on port 5000.");
+    throw new Error("Demo seeding requires the API on port 5000.");
   }
 }
 
@@ -229,10 +228,10 @@ async function verify(manifest, sessions) {
 }
 
 async function main() {
-  checkLocalTargets();
+  checkDemoTarget();
   await mkdir(fixtureDirectory, { recursive: true, mode: 0o700 });
   await chmod(fixtureDirectory, 0o700);
-  await mongoose.connect(databaseUrl, { serverSelectionTimeoutMS: 5000 });
+  await mongoose.connect(databaseUrl, { dbName, serverSelectionTimeoutMS: 10000 });
   const manifest = await loadManifest();
   const sessions = {};
   for (const role of Object.keys(accounts)) sessions[role] = await signIn(manifest, role);

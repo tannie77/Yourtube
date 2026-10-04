@@ -7,8 +7,10 @@ export type Plan = {
   pricesPaise: Record<BillingCycleId, number>;
   features: {
     maxQuality: string;
+    maxPlaybackSpeed: number;
     dailyWatchMinutes: number | null;
     dailyDownloads: number;
+    monthlyDownloads: number;
     premiumAccess: string;
     earlyAccess: boolean;
     exclusiveCourses: boolean;
@@ -21,6 +23,8 @@ export type PlanCatalogue = {
   billingCycles: { id: BillingCycleId; label: string; validityDays: number }[];
   currency: "INR";
   pricingNote: string;
+  razorpayTestConfigured: boolean;
+  razorpayKeyId: string | null;
 };
 
 export type SubscriptionSnapshot = {
@@ -39,7 +43,10 @@ export type SubscriptionSnapshot = {
   } | null;
   accessEndsAt: string | null;
   cancelAtPeriodEnd: boolean;
-  autoRenew: false;
+  autoRenew: boolean;
+  nextRenewalAt: string | null;
+  paymentProvider: "local" | "razorpay" | null;
+  pendingProviderChange: { planId: Exclude<Plan["id"], "free">; billingCycle: BillingCycleId; startsAt: string | null } | null;
 };
 
 export type SimulatedResult = {
@@ -57,6 +64,8 @@ export type CheckoutOrder = {
   amountPaise: number;
   currency: "INR";
   status: "pending" | "processing" | "paid" | "failed" | "cancelled";
+  provider: "local" | "razorpay";
+  razorpaySubscriptionId: string | null;
   createdAt: string;
   paidAt: string | null;
   termStartsAt: string | null;
@@ -84,6 +93,15 @@ export type TestReceipt = {
   emailStatus: "pending" | "sending" | "sent" | "failed";
   emailSentAt: string | null;
   notice: string;
+  deliveryMode: string;
+  provider: "local" | "razorpay";
+  supportEmail: string;
+  sellerName: string | null;
+  sellerAddress: string | null;
+  sellerGstin: string | null;
+  taxRatePercent: number | null;
+  taxPaise: number | null;
+  subtotalPaise: number | null;
 };
 
 export function formatRupees(paise: number) {

@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import User from "../Modals/Auth.js";
-import { clientContext } from "../security/client-context.js";
+import { resolvedClientContext } from "../security/client-context.js";
+import { commentLanguages } from "../comments/languages.js";
 import {
   challengeContext,
   findTrustedContext,
@@ -37,6 +38,7 @@ export function publicUser(user) {
     location: user.location || "",
     preferredLanguage: user.preferredLanguage || "en",
     themePreference: user.themePreference || "automatic",
+    restrictDownloadsToTrustedDevices: Boolean(user.restrictDownloadsToTrustedDevices),
     role: user.role || "member",
     channelname: user.channelname,
     description: user.description,
@@ -58,7 +60,7 @@ export async function register(request, response) {
   try {
     const created = await User.create({ email, name, passwordHash: await hashPassword(password) });
     const user = await ensureUsername(created);
-    const context = clientContext(request, request.body);
+    const context = await resolvedClientContext(request, request.body);
     const trustedDevice = await trustContext(user._id, context);
     await createSession(response, user, { context, trustedDeviceId: trustedDevice._id });
     await recordLoginAttempt({ userId: user._id, email, eventType: "registration", outcome: "signed_in", successful: true, context });
@@ -77,8 +79,8 @@ export async function login(request, response) {
     return response.status(400).json({ message: "Email and password are required." });
   }
 
-  const context = clientContext(request, request.body);
   try {
+    const context = await resolvedClientContext(request, request.body);
     const user = await User.findOne({ email }).select("+passwordHash");
     if (!user || !(await verifyPassword(password, user.passwordHash))) {
       await recordLoginAttempt({ userId: user?._id, email, eventType: "password", outcome: "invalid_credentials", successful: false, context });
@@ -88,6 +90,10 @@ export async function login(request, response) {
     const namedUser = await ensureUsername(user);
     const trustedDevice = await findTrustedContext(namedUser._id, context);
     if (!trustedDevice) {
+      if (process.env.EMAIL_DELIVERY_DISABLED === "true") {
+        await recordLoginAttempt({ userId: namedUser._id, email, eventType: "password", outcome: "otp_delivery_failed", successful: false, context });
+        return response.status(503).json({ message: "Email delivery is paused. Sign-in from a new device is unavailable until it is resumed." });
+      }
       try {
         const challenge = await startOtpChallenge(namedUser, context);
         await recordLoginAttempt({ userId: namedUser._id, email, eventType: "password", outcome: "otp_required", successful: true, context });
@@ -96,11 +102,11 @@ export async function login(request, response) {
           challengeToken: challenge.token,
           expiresAt: challenge.expiresAt,
           destination: namedUser.email.replace(/^(.{1,2}).*(@.*)$/, "$1•••$2"),
-          message: "Enter the code captured by the local Mailpit inbox.",
+          message: process.env.SMTP_HOST ? "Enter the code sent to your email address." : "Enter the code captured by the local Mailpit inbox.",
         });
       } catch {
         await recordLoginAttempt({ userId: namedUser._id, email, eventType: "password", outcome: "otp_delivery_failed", successful: false, context });
-        return response.status(503).json({ message: "Could not deliver the local sign-in code. Start Mailpit and try again." });
+        return response.status(503).json({ message: process.env.SMTP_HOST ? "Could not deliver the sign-in code. Check the email configuration and try again." : "Could not deliver the local sign-in code. Start Mailpit and try again." });
       }
     }
 
@@ -125,7 +131,7 @@ export async function verifyLoginOtp(request, response) {
         const context = challengeContext(result.challenge);
         await recordLoginAttempt({ userId: result.challenge.userId, email: result.challenge.email, eventType: "otp", outcome: "otp_failed", successful: false, context });
       }
-      return response.status(result.status === "locked" ? 429 : 400).json({ message: result.status === "locked" ? "Too many incorrect codes. Sign in again to request a new code." : "Enter the valid six-digit code from Mailpit." });
+      return response.status(result.status === "locked" ? 429 : 400).json({ message: result.status === "locked" ? "Too many incorrect codes. Sign in again to request a new code." : "Enter the valid six-digit sign-in code." });
     }
     if (result.status === "expired") {
       const context = challengeContext(result.challenge);
@@ -142,7 +148,7 @@ export async function verifyLoginOtp(request, response) {
     return response.json({ user: publicUser(await ensureUsername(user)) });
   } catch (error) {
     console.error("OTP verification failed:", error);
-    return response.status(500).json({ message: "Could not verify the local sign-in code." });
+    return response.status(500).json({ message: "Could not verify the sign-in code." });
   }
 }
 
@@ -198,8 +204,8 @@ export async function updateCommentProfile(request, response) {
   if (image !== undefined && !validAvatar(image)) {
     return response.status(400).json({ message: "Choose a PNG, JPEG or WebP picture under 256 KB." });
   }
-  if (preferredLanguage !== undefined && !["en", "hi", "es"].includes(preferredLanguage)) {
-    return response.status(400).json({ message: "Choose English, Hindi or Spanish." });
+  if (preferredLanguage !== undefined && !Object.hasOwn(commentLanguages, preferredLanguage)) {
+    return response.status(400).json({ message: "Choose an available comment translation language." });
   }
 
   try {

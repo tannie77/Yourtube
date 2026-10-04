@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import CheckoutOrder from "../Modals/CheckoutOrder.js";
 import Subscription from "../Modals/Subscription.js";
 import { billingCycles, findPlan } from "./plans.js";
-import { deliverReceipt, publicReceipt } from "./receipts.js";
+import { deliverReceipt, invoiceHtml, publicReceipt } from "./receipts.js";
 import { isActive, orderIntent, readSubscription, termLength } from "./state.js";
 
 const outcomeToStatus = { success: "paid", failure: "failed", cancel: "cancelled" };
@@ -19,6 +19,8 @@ export function publicOrder(order) {
     amountPaise: order.amountPaise,
     currency: order.currency,
     status: order.status,
+    provider: order.provider || "local",
+    razorpaySubscriptionId: order.razorpaySubscriptionId || null,
     createdAt: order.createdAt,
     paidAt: order.paidAt || null,
     termStartsAt: order.termStartsAt || null,
@@ -88,6 +90,12 @@ export async function createOrder(request, response) {
     }
 
     const subscription = await readSubscription(request.user._id);
+    if (await CheckoutOrder.exists({ userId: request.user._id, provider: "razorpay", status: { $in: ["pending", "processing"] } })) {
+      return response.status(409).json({ message: "Complete or close the pending Razorpay Test checkout first." });
+    }
+    if (isActive(subscription) && subscription.provider === "razorpay") {
+      return response.status(409).json({ message: "Use the recurring membership controls for a Razorpay Test subscription." });
+    }
     if (isActive(subscription) && subscription.scheduledChange?.orderId) {
       return response.status(409).json({ message: "A prepaid plan change is already scheduled. Let it start before creating another order." });
     }
@@ -224,6 +232,9 @@ async function activateSubscription(order) {
       startedAt: term.startsAt,
       expiresAt: term.expiresAt,
       cancelAtPeriodEnd: false,
+      provider: "local",
+      autoRenew: false,
+      nextRenewalAt: null,
       lastOrderId: order._id,
     };
     if (!current) {
@@ -237,7 +248,7 @@ async function activateSubscription(order) {
     }
     const updated = await Subscription.findOneAndUpdate(
       { _id: current._id, expiresAt: { $lte: now }, "scheduledChange.orderId": { $exists: false } },
-      { $set: values, $unset: { scheduledChange: 1 } },
+      { $set: values, $unset: { scheduledChange: 1, pendingProviderChange: 1, razorpaySubscriptionId: 1 } },
       { returnDocument: "after" },
     );
     return updated ? term : null;
@@ -352,5 +363,18 @@ export async function retryReceipt(request, response) {
   } catch (error) {
     console.error("Could not retry local receipt:", error);
     return response.status(500).json({ message: "Could not retry the local receipt." });
+  }
+}
+
+export async function getInvoice(request, response) {
+  try {
+    const order = await ownedOrder(request);
+    if (!order || order.status !== "paid") return response.status(404).json({ message: "Test invoice not found." });
+    response.set("Cache-Control", "private, no-store");
+    response.set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'");
+    return response.type("html").send(invoiceHtml(order, request.user));
+  } catch (error) {
+    console.error("Could not load test invoice:", error);
+    return response.status(500).json({ message: "Could not load the test invoice." });
   }
 }

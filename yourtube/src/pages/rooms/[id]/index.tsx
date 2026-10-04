@@ -113,7 +113,7 @@ export default function RoomPage() {
 
   async function copyLink() {
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}/rooms/${roomId}`);
+      await navigator.clipboard.writeText(`${window.location.origin}/rooms/${roomId}${window.location.hash}`);
       setCopied(true);
       setNotice("Room link copied. Share it with another signed-in person.");
       window.setTimeout(() => setCopied(false), 2500);
@@ -171,9 +171,10 @@ export default function RoomPage() {
   return <main className="yt-page">
     <div className={styles.roomTop}><Link href="/rooms" className={styles.backLink}><ArrowLeft aria-hidden="true" />All rooms</Link><span className={styles.roomStatus} data-state={blocked ? "blocked" : joined ? "joined" : "waiting"}><span />{room.endedAt ? "Ended" : room.isRemoved ? "Access removed" : joined ? "You are in the room" : room.locked ? "Entry locked" : "Ready to join"}</span></div>
     <section className={styles.roomHero} aria-labelledby="room-heading">
-      <div><span className={styles.eyebrow}><span /> Private room</span><h1 id="room-heading">{room.title}</h1><p>{room.isHost ? "You are the host. Share the link and manage this room." : "Join the lobby to see who is here and connect with the host."}</p></div>
+      <div><h1 id="room-heading">{room.title}</h1><p>{room.isHost ? "You are the host. Share the link and manage this room." : "Join the lobby to see who is here and connect with the host."}</p></div>
       <div className={styles.roomHeroBadge}><UsersRound aria-hidden="true" /><strong>{joined ? participants.length : "—"}<span> / {room.participantLimit}</span></strong><small>{joined ? "People here" : "Join to see people"}</small></div>
     </section>
+    <p className={styles.cardCopy}><ShieldCheck className="inline size-4" aria-hidden="true" /> {room.e2eeRequired ? "Media is end-to-end encrypted when you join with the complete invitation link in a supported browser. The link contains the secret key; share it only with invitees." : "This older room uses WebRTC transport encryption."}</p>
     {joined && room.recording && <p className={styles.recordingBanner} role="status"><Circle aria-hidden="true" />The host is recording this room to a local file.</p>}
 
     <div className={styles.roomLayout}>
@@ -238,7 +239,7 @@ export default function RoomPage() {
             <label htmlFor="room-microphone">Microphone<select id="room-microphone" value={activeMicId} disabled={!joined || mediaBusy} onChange={(event) => void switchDevice("audio", event.target.value)}><option value="">Default microphone</option>{devices.filter((device) => device.kind === "audioinput" && device.deviceId).map((device, index) => <option key={device.deviceId} value={device.deviceId}>{device.label || `Microphone ${index + 1}`}</option>)}</select></label>
             <label htmlFor="room-camera">Camera<select id="room-camera" value={activeCameraId} disabled={!joined || mediaBusy} onChange={(event) => void switchDevice("video", event.target.value)}><option value="">Default camera</option>{devices.filter((device) => device.kind === "videoinput" && device.deviceId).map((device, index) => <option key={device.deviceId} value={device.deviceId}>{device.label || `Camera ${index + 1}`}</option>)}</select></label>
           </div>
-          <div className={styles.settingList}><Setting label="Noise suppression" detail="Reduce background microphone noise" enabled={noiseSuppression} busy={mediaBusy || !localStream?.getAudioTracks().length} onClick={() => void toggleNoise()} /><Setting label="Low bandwidth video" detail="Use a smaller camera feed" enabled={lowBandwidth} busy={mediaBusy} onClick={() => void toggleLowBandwidth()} /></div>
+          <div className={styles.settingList}><Setting label="Noise suppression" detail="Reduce background microphone noise" enabled={noiseSuppression} busy={mediaBusy || !localStream?.getAudioTracks().length} onClick={() => void toggleNoise()} /><Setting label="Low bandwidth video" detail="Adjusts automatically when the network is slow; choose manually to override" enabled={lowBandwidth} busy={mediaBusy} onClick={() => void toggleLowBandwidth()} /></div>
           <button type="button" className={styles.secondaryButton} disabled={mediaBusy} onClick={() => void refreshDevices()}><RefreshCw aria-hidden="true" />Refresh devices</button>
         </section>}
 

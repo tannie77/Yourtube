@@ -10,6 +10,7 @@ export type RoomInfo = {
   createdAt: string;
   endedAt: string | null;
   participantLimit: number;
+  e2eeRequired?: boolean;
   recording?: boolean;
 };
 

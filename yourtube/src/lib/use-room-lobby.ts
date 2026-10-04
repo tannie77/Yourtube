@@ -3,6 +3,7 @@ import { io, type Socket } from "socket.io-client";
 import axios from "axios";
 import axiosInstance from "./axiosinstance";
 import type { ChatEntry, RoomInfo, RoomParticipant, RoomState } from "./room-types";
+import { installRoomE2EE, roomKeyFromHash, supportsRoomE2EE } from "./room-e2ee";
 
 type Ack = { ok: boolean; message?: string; selfId?: string; peers?: RoomParticipant[] };
 type Signal = { from: string; type: "offer" | "answer" | "candidate"; description?: RTCSessionDescriptionInit; candidate?: RTCIceCandidateInit };
@@ -49,6 +50,9 @@ export function useRoomLobby(roomId: string) {
   const [notice, setNotice] = useState("");
   const socketRef = useRef<Socket | null>(null);
   const peersRef = useRef(new Map<string, RTCPeerConnection>());
+  const iceServersRef = useRef<RTCIceServer[]>([]);
+  const e2eeWorkerRef = useRef<Worker | null>(null);
+  const e2eeKeyRef = useRef<Uint8Array | null>(null);
   const streamsRef = useRef(new Map<string, MediaStream>());
   const candidatesRef = useRef(new Map<string, RTCIceCandidateInit[]>());
   const localRef = useRef<MediaStream | null>(null);
@@ -56,6 +60,7 @@ export function useRoomLobby(roomId: string) {
   const screenRequestRef = useRef(false);
   const joinedAtRef = useRef<number | null>(null);
   const joinAttemptRef = useRef(0);
+  const manualBandwidthRef = useRef(false);
 
   const refreshDevices = useCallback(async () => {
     if (!navigator.mediaDevices?.enumerateDevices) return;
@@ -112,12 +117,13 @@ export function useRoomLobby(roomId: string) {
     if (typeof RTCPeerConnection === "undefined") { setNotice("WebRTC is unavailable in this browser. Chat still works."); return null; }
     const existing = peersRef.current.get(id);
     if (existing) return existing;
-    const peer = new RTCPeerConnection({ iceServers: [] });
+    const peer = new RTCPeerConnection({ iceServers: iceServersRef.current });
     peersRef.current.set(id, peer);
     const stream = new MediaStream();
     streamsRef.current.set(id, stream);
     const audio = peer.addTransceiver("audio", { direction: "sendrecv" });
     const video = peer.addTransceiver("video", { direction: "sendrecv" });
+    if (e2eeWorkerRef.current && e2eeKeyRef.current) installRoomE2EE(peer, e2eeWorkerRef.current, e2eeKeyRef.current);
     void audio.sender.replaceTrack(localRef.current?.getAudioTracks()[0] || null);
     void video.sender.replaceTrack(screenRef.current || localRef.current?.getVideoTracks()[0] || null);
     peer.onicecandidate = (event) => {
@@ -199,6 +205,9 @@ export function useRoomLobby(roomId: string) {
       if (screen) { screen.onended = null; screen.stop(); }
       localRef.current?.getTracks().forEach((track) => track.stop());
       localRef.current = null;
+      e2eeWorkerRef.current?.terminate();
+      e2eeWorkerRef.current = null;
+      e2eeKeyRef.current = null;
     };
   }, [refresh, resetJoinedState]);
 
@@ -218,13 +227,38 @@ export function useRoomLobby(roomId: string) {
 
   const join = useCallback(async (withMedia = false) => {
     if (!roomId || !room || room.endedAt || room.isRemoved || socketRef.current || state === "joining") return;
+    const roomKey = room.e2eeRequired ? roomKeyFromHash(window.location.hash) : null;
+    if (room.e2eeRequired && (!roomKey || !supportsRoomE2EE())) {
+      setError(!roomKey ? "Use the complete room invitation link, including its encryption key." : "This browser does not support encrypted room media. Try an up-to-date browser.");
+      return;
+    }
+    let keyDigest: string | undefined;
+    if (roomKey) {
+      keyDigest = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", roomKey)), (byte) => byte.toString(16).padStart(2, "0")).join("");
+    }
     const attempt = ++joinAttemptRef.current;
     setError("");
     setNotice("");
     setState("joining");
+    manualBandwidthRef.current = false;
     resetJoinedState();
     closePeers();
     stopLocal();
+    try {
+      const { data } = await axiosInstance.get<{ iceServers: RTCIceServer[] }>("/rooms/ice", { timeout: 5000 });
+      if (attempt !== joinAttemptRef.current) return;
+      if (!Array.isArray(data.iceServers)) throw new Error("Invalid room network configuration.");
+      iceServersRef.current = data.iceServers;
+    } catch {
+      if (attempt === joinAttemptRef.current) {
+        setError("Could not load call network settings. Try joining again.");
+        setState("preview");
+      }
+      return;
+    }
+    e2eeWorkerRef.current?.terminate();
+    e2eeWorkerRef.current = roomKey ? new Worker("/room-e2ee-worker.js") : null;
+    e2eeKeyRef.current = roomKey;
 
     if (withMedia) {
       const stream = await acquireMedia();
@@ -246,7 +280,7 @@ export function useRoomLobby(roomId: string) {
       if (socketRef.current !== socket) return;
       closePeers();
       setState("joining");
-      socket.timeout(5000).emit("room:join", roomId, (timeout: Error | null, result: Ack) => {
+      socket.timeout(5000).emit("room:join", { roomId, keyDigest }, (timeout: Error | null, result: Ack) => {
         if (socketRef.current !== socket) return;
         if (timeout || !result?.ok) {
           setError(result?.message || "Could not join this room. Try again.");
@@ -255,6 +289,9 @@ export function useRoomLobby(roomId: string) {
           socket.disconnect();
           closePeers();
           stopLocal();
+          e2eeWorkerRef.current?.terminate();
+          e2eeWorkerRef.current = null;
+          e2eeKeyRef.current = null;
           resetJoinedState();
           return;
         }
@@ -361,6 +398,9 @@ export function useRoomLobby(roomId: string) {
     socket?.disconnect();
     closePeers();
     stopLocal();
+    e2eeWorkerRef.current?.terminate();
+    e2eeWorkerRef.current = null;
+    e2eeKeyRef.current = null;
     resetJoinedState();
     setState("left");
     setNotice("You left the room. You can rejoin with this link.");
@@ -545,8 +585,53 @@ export function useRoomLobby(roomId: string) {
       try { await track.applyConstraints({ width: { ideal: next ? 320 : 1280 }, height: { ideal: next ? 180 : 720 }, frameRate: { ideal: next ? 15 : 30 } }); }
       catch { setNotice("Camera quality could not be changed on this device."); return; }
     }
+    manualBandwidthRef.current = true;
     setLowBandwidth(next);
   }, [lowBandwidth]);
+
+  useEffect(() => {
+    if (state !== "joined") return;
+    let poorSamples = 0;
+    let healthySamples = 0;
+    let checking = false;
+    const timer = window.setInterval(async () => {
+      if (checking || manualBandwidthRef.current || !localRef.current?.getVideoTracks().length || peersRef.current.size === 0) return;
+      checking = true;
+      try {
+        const readings = await Promise.all([...peersRef.current.values()].map(async (peer) => {
+          const report = await peer.getStats();
+          let roundTrip: number | null = null;
+          let outgoingBitrate: number | null = null;
+          report.forEach((stat) => {
+            const item = stat as RTCStats & { state?: string; nominated?: boolean; currentRoundTripTime?: number; availableOutgoingBitrate?: number };
+            if (item.type === "candidate-pair" && item.state === "succeeded" && item.nominated) {
+              if (typeof item.currentRoundTripTime === "number") roundTrip = item.currentRoundTripTime;
+              if (typeof item.availableOutgoingBitrate === "number") outgoingBitrate = item.availableOutgoingBitrate;
+            }
+          });
+          return { roundTrip, outgoingBitrate };
+        }));
+        const measured = readings.filter((item) => item.roundTrip !== null || item.outgoingBitrate !== null);
+        if (!measured.length) return;
+        const poor = measured.some((item) => (item.roundTrip !== null && item.roundTrip > 0.6) || (item.outgoingBitrate !== null && item.outgoingBitrate < 350_000));
+        const healthy = measured.every((item) => (item.roundTrip === null || item.roundTrip < 0.25) && (item.outgoingBitrate === null || item.outgoingBitrate > 900_000));
+        poorSamples = poor ? poorSamples + 1 : 0;
+        healthySamples = healthy ? healthySamples + 1 : 0;
+        if ((poorSamples < 2 || lowBandwidth) && (healthySamples < 4 || !lowBandwidth)) return;
+        const next = poorSamples >= 2;
+        const track = localRef.current?.getVideoTracks()[0];
+        if (!track || manualBandwidthRef.current) return;
+        await track.applyConstraints({ width: { ideal: next ? 320 : 1280 }, height: { ideal: next ? 180 : 720 }, frameRate: { ideal: next ? 15 : 30 } });
+        setLowBandwidth(next);
+        sendPresence({ connection: next ? "poor" : "good" });
+        setNotice(next ? "Network is slow. Camera quality was reduced automatically." : "Network recovered. Camera quality was restored.");
+        poorSamples = 0;
+        healthySamples = 0;
+      } catch { /* Stats and camera constraints vary by browser; manual mode remains available. */ }
+      finally { checking = false; }
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [lowBandwidth, sendPresence, state]);
 
   const hostAction = useCallback((action: HostAction) => new Promise<Ack>((resolve) => {
     const socket = socketRef.current;

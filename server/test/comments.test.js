@@ -15,7 +15,7 @@ import CommentTranslation from "../Modals/CommentTranslation.js";
 import CommentModerationEvent from "../Modals/CommentModerationEvent.js";
 import User from "../Modals/Auth.js";
 import Video from "../Modals/video.js";
-import { commentSafetyError } from "../security/comment-safety.js";
+import { commentFingerprint, commentSafetyError } from "../security/comment-safety.js";
 
 const serverDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 let database;
@@ -132,16 +132,24 @@ test("comments and replies use the session, enforce video access, and preserve r
 
 test("local safety checks block abuse, duplicates, and repeated posting without trusting supplied identities", async () => {
   assert.match(commentSafetyError("What the fuck"), /abusive/);
+  assert.match(commentSafetyError("What the f.u.c.k"), /abusive/);
+  assert.match(commentSafetyError("یہ بہنچود ہے"), /abusive/);
+  assert.match(commentSafetyError("Quelle merde"), /abusive/);
   assert.match(commentSafetyError("Visit https://example.com"), /Links/);
+  assert.match(commentSafetyError("Visit bit.ly/offer"), /Links/);
+  assert.match(commentSafetyError("Open 127.0.0.1/private"), /Links/);
   assert.match(commentSafetyError("🙂🙂🙂🙂🙂🙂🙂🙂"), /repeated/);
   assert.equal(commentSafetyError("नमस्ते 🌍 مرحبا"), null);
+  assert.match(commentSafetyError("@alice @bob @cat @dan @eve @fox @gus @hal @ivy"), /mention fewer/);
+  assert.equal(commentFingerprint("Café, useful!"), commentFingerprint("cafe useful"));
+  assert.equal(commentFingerprint("Useful\u200b comment"), commentFingerprint("useful comment"));
 
   const author = await register("Safety viewer");
   const free = await createVideo(author, "Safety demo");
   const route = `/comment/${free._id}`;
   assert.equal((await request(route, author.cookie, "POST", { commentbody: "Visit https://example.com" })).status, 400);
   assert.equal((await request(route, author.cookie, "POST", { commentbody: "One useful comment" })).status, 201);
-  assert.equal((await request(route, author.cookie, "POST", { commentbody: "one   useful COMMENT" })).status, 409);
+  assert.equal((await request(route, author.cookie, "POST", { commentbody: "ONE-useful, comment!" })).status, 409);
   const challengeResponse = await request(route, author.cookie, "POST", { commentbody: "Another thought" });
   assert.equal(challengeResponse.status, 428);
   const [a, b] = (await challengeResponse.json()).challenge.question.match(/\d+/g).map(Number);
@@ -236,6 +244,8 @@ test("translation cache, one-report rule, admin review, and retained replies", a
   assert.equal((await request(`/comment/${first._id}/report`, reporter.cookie, "POST", { reason: "offensive" })).status, 201);
   assert.equal((await request(`/comment/${first._id}/report`, reporter.cookie, "POST", { reason: "spam" })).status, 409);
   assert.equal((await request(`/comment/${first._id}/report`, author.cookie, "POST", { reason: "spam" })).status, 400);
+  assert.equal((await (await request(route, reporter.cookie)).json()).comments.find((item) => item._id === first._id).viewerReported, true);
+  assert.equal((await (await request(route, author.cookie)).json()).comments.find((item) => item._id === first._id).viewerReported, false);
   assert.equal((await request("/comment/moderation/queue", reporter.cookie)).status, 403);
   const queued = (await (await request("/comment/moderation/queue", admin.cookie)).json()).reports[0];
   assert.equal(queued.reportedText, first.commentbody);

@@ -38,11 +38,11 @@ export function attachRoomSignaling(httpServer, allowedOrigins) {
   const recordingRooms = new Set();
 
   async function snapshot(roomId) {
-    const room = await CallRoom.findOne({ roomId });
+    const room = await CallRoom.findOne({ roomId }).select("+e2eeKeyDigest");
     if (!room) return;
     const participants = [...(rooms.get(roomId)?.values() || [])].map((entry) => publicParticipant(entry, room));
     io.to(roomId).emit("room:state", {
-      room: { id: room.roomId, title: room.title, hostId: String(room.hostId), locked: room.locked, allowChat: room.allowChat, allowShare: room.allowShare, createdAt: room.createdAt, endedAt: room.endedAt, participantLimit: PARTICIPANT_LIMIT, recording: recordingRooms.has(roomId) },
+      room: { id: room.roomId, title: room.title, hostId: String(room.hostId), locked: room.locked, allowChat: room.allowChat, allowShare: room.allowShare, createdAt: room.createdAt, endedAt: room.endedAt, participantLimit: PARTICIPANT_LIMIT, recording: recordingRooms.has(roomId), e2eeRequired: Boolean(room.e2eeKeyDigest) },
       participants,
     });
   }
@@ -83,11 +83,13 @@ export function attachRoomSignaling(httpServer, allowedOrigins) {
     socket.use((_packet, next) => { void checkSession().then((valid) => next(valid ? undefined : new Error("Session expired."))); });
     const sessionTimer = setInterval(() => { void checkSession(); }, 15_000);
     sessionTimer.unref?.();
-    socket.on("room:join", async (roomId, ack) => {
+    socket.on("room:join", async (input, ack) => {
       try {
+        const roomId = typeof input === "string" ? input : input?.roomId;
         if (typeof roomId !== "string" || !/^[A-Za-z0-9_-]{24}$/.test(roomId)) return failure(ack, "Room not found.");
-        const room = await CallRoom.findOne({ roomId });
+        const room = await CallRoom.findOne({ roomId }).select("+e2eeKeyDigest");
         if (!room) return failure(ack, "Room not found.");
+        if (room.e2eeKeyDigest && input?.keyDigest !== room.e2eeKeyDigest) return failure(ack, "This encrypted room needs its complete invitation link.");
         if (room.endedAt) return failure(ack, "This room has ended.");
         if (room.removedUserIds.some((id) => String(id) === socket.data.userId)) return failure(ack, "A host removed you from this room.");
         if (room.locked && String(room.hostId) !== socket.data.userId && !room.coHostIds.some((id) => String(id) === socket.data.userId)) return failure(ack, "This room is locked.");
@@ -230,7 +232,7 @@ export function attachRoomSignaling(httpServer, allowedOrigins) {
     });
 
     socket.on("room:leave", async (_unused, ack) => { await leave(socket); reply(ack, { ok: true }); });
-    socket.on("disconnect", () => { clearInterval(sessionTimer); void leave(socket); });
+    socket.on("disconnect", () => { clearInterval(sessionTimer); void leave(socket).catch((error) => console.error("Room disconnect cleanup failed:", error)); });
   });
 
   return io;

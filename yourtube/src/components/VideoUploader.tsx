@@ -14,11 +14,13 @@ export default function VideoUploader({ onUploaded }: { onUploaded: () => void }
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [captionFile, setCaptionFile] = useState<File | null>(null);
   const [videoTitle, setVideoTitle] = useState("");
+  const [isCourse, setIsCourse] = useState(false);
+  const [earlyAccess, setEarlyAccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const captionInputRef = useRef<HTMLInputElement>(null);
 
   const resetForm = () => {
-    setVideoFile(null); setCaptionFile(null); setVideoTitle(""); setUploadProgress(0);
+    setVideoFile(null); setCaptionFile(null); setVideoTitle(""); setIsCourse(false); setEarlyAccess(false); setUploadProgress(0);
     if (fileInputRef.current) fileInputRef.current.value = "";
     if (captionInputRef.current) captionInputRef.current.value = "";
   };
@@ -44,6 +46,8 @@ export default function VideoUploader({ onUploaded }: { onUploaded: () => void }
     const form = new FormData();
     form.append("file", videoFile);
     form.append("videotitle", videoTitle.trim());
+    form.append("isCourse", String(isCourse));
+    form.append("earlyAccess", String(earlyAccess));
     if (captionFile) form.append("captions", captionFile);
     setIsUploading(true); setUploadProgress(0);
     try {
@@ -75,6 +79,8 @@ export default function VideoUploader({ onUploaded }: { onUploaded: () => void }
           <>
             <div><Label htmlFor="video-title">Title</Label><Input id="video-title" value={videoTitle} maxLength={120} onChange={(event) => setVideoTitle(event.target.value)} disabled={isUploading} className="mt-1" /></div>
             <div><Label htmlFor="video-captions">Captions (optional)</Label><Input ref={captionInputRef} id="video-captions" type="file" accept=".vtt,text/vtt" onChange={selectCaptions} disabled={isUploading} className="mt-1" />{captionFile && <p className="yt-subtle mt-1 text-xs">{captionFile.name}</p>}</div>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={isCourse} onChange={(event) => setIsCourse(event.target.checked)} disabled={isUploading} />Exclusive course video (Gold members)</label>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={earlyAccess} onChange={(event) => setEarlyAccess(event.target.checked)} disabled={isUploading} />Priority access for Gold members for 7 days</label>
             {isUploading && <div className="space-y-2"><div className="flex justify-between text-sm"><span>{uploadProgress === 100 ? "Processing video…" : "Uploading…"}</span><span>{uploadProgress}%</span></div><Progress value={uploadProgress} className="h-2" /></div>}
             <div className="flex justify-end gap-3"><Button variant="outline" onClick={resetForm} disabled={isUploading}>Cancel</Button><button type="button" className="yt-primary-button" onClick={handleUpload} disabled={isUploading || !videoTitle.trim()}>{isUploading ? "Please wait…" : "Upload video"}</button></div>
           </>

@@ -6,6 +6,7 @@ import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server-core";
 import app from "../app.js";
 import Subscription from "../Modals/Subscription.js";
+import { requiredVideoPlan } from "../subscriptions/video-access.js";
 
 const serverDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 let database;
@@ -40,6 +41,14 @@ test("plan catalogue uses one set of sample INR prices and three terms", async (
   assert.equal(catalogue.plans[0].features.dailyDownloads, 1);
   assert.equal(catalogue.plans[1].pricesPaise.monthly, 9900);
   assert.equal(catalogue.plans[3].features.dailyWatchMinutes, null);
+  assert.equal(catalogue.plans[0].features.maxPlaybackSpeed, 1.25);
+  assert.equal(catalogue.plans[3].features.exclusiveCourses, true);
+});
+
+test("course videos and early releases require Gold access", () => {
+  const video = { accessPlan: "free", sourceQuality: "480p", renditions: [], isCourse: true };
+  assert.equal(requiredVideoPlan(video), "gold");
+  assert.equal(requiredVideoPlan({ ...video, isCourse: false, earlyAccessUntil: new Date(Date.now() + 60_000) }), "gold");
 });
 
 test("legacy clone action routes remain closed after session-owned replacements", async () => {
@@ -85,6 +94,9 @@ test("account plan is Free by default and an expired paid record never grants pa
     accessEndsAt: null,
     cancelAtPeriodEnd: false,
     autoRenew: false,
+    nextRenewalAt: null,
+    paymentProvider: null,
+    pendingProviderChange: null,
   });
 
   const startedAt = new Date(Date.now() - 24 * 60 * 60 * 1000);

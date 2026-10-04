@@ -1,10 +1,31 @@
 import DailyDownloadUsage from "../Modals/DailyDownloadUsage.js";
+import MonthlyDownloadUsage from "../Modals/MonthlyDownloadUsage.js";
 import DownloadRecord from "../Modals/DownloadRecord.js";
 import DownloadWindow from "../Modals/DownloadWindow.js";
 import { findPlan } from "../subscriptions/plans.js";
 import { istDayKey, viewerPlan } from "./usage.js";
 
 export const DUPLICATE_DOWNLOAD_WINDOW_MS = 30 * 60 * 1000;
+
+async function reservePeriod(Model, key, limit) {
+  try {
+    await Model.updateOne(key, { $setOnInsert: { completedCount: 0, reservedCount: 0 } }, { upsert: true });
+  } catch (error) {
+    if (error.code !== 11000) throw error;
+  }
+  return Model.findOneAndUpdate(
+    { ...key, $expr: { $lt: [{ $add: ["$completedCount", "$reservedCount"] }, limit] } },
+    { $inc: { reservedCount: 1 } },
+    { returnDocument: "after" },
+  );
+}
+
+async function settlePeriod(Model, key, completed) {
+  return Model.updateOne(
+    { ...key, reservedCount: { $gte: 1 } },
+    completed ? { $inc: { reservedCount: -1, completedCount: 1 } } : { $inc: { reservedCount: -1 } },
+  );
+}
 
 // A unique user/video row admits only one active transfer or one recent success.
 export async function acquireDownloadWindow(userId, videoId, recordId, now = new Date()) {
@@ -37,42 +58,50 @@ export async function settleDownloadWindow(window, completed, now = new Date()) 
 
 export async function downloadUsageSnapshot(userId, subscription, now = new Date()) {
   const dayKey = istDayKey(now);
+  const monthKey = dayKey.slice(0, 7);
   const planId = viewerPlan(subscription, now);
-  const limit = findPlan(planId).features.dailyDownloads;
-  const record = await DailyDownloadUsage.findOne({ userId, dayKey }).lean();
+  const { dailyDownloads: limit, monthlyDownloads: monthlyLimit } = findPlan(planId).features;
+  const [record, monthRecord] = await Promise.all([
+    DailyDownloadUsage.findOne({ userId, dayKey }).lean(),
+    MonthlyDownloadUsage.findOne({ userId, monthKey }).lean(),
+  ]);
   const completed = record?.completedCount || 0;
   const pending = record?.reservedCount || 0;
-  return { dayKey, planId, limit, completed, pending, remaining: Math.max(0, limit - completed - pending) };
+  const monthlyCompleted = monthRecord?.completedCount || 0;
+  const monthlyPending = monthRecord?.reservedCount || 0;
+  const dailyRemaining = Math.max(0, limit - completed - pending);
+  const monthlyRemaining = Math.max(0, monthlyLimit - monthlyCompleted - monthlyPending);
+  return { dayKey, monthKey, planId, limit, completed, pending, dailyRemaining,
+    monthlyLimit, monthlyCompleted, monthlyPending, monthlyRemaining,
+    remaining: Math.min(dailyRemaining, monthlyRemaining) };
 }
 
 export async function reserveDownload(userId, subscription, now = new Date()) {
   const dayKey = istDayKey(now);
+  const monthKey = dayKey.slice(0, 7);
   const planId = viewerPlan(subscription, now);
-  const limit = findPlan(planId).features.dailyDownloads;
-  const key = { userId, dayKey };
-
+  const { dailyDownloads: limit, monthlyDownloads: monthlyLimit } = findPlan(planId).features;
+  const day = { userId, dayKey };
+  const month = { userId, monthKey };
+  const reservedDay = await reservePeriod(DailyDownloadUsage, day, limit);
+  if (!reservedDay) return { allowed: false, reason: "daily", userId, dayKey, monthKey, planId, limit, monthlyLimit };
   try {
-    await DailyDownloadUsage.updateOne(key, { $setOnInsert: { completedCount: 0, reservedCount: 0 } }, { upsert: true });
+    const reservedMonth = await reservePeriod(MonthlyDownloadUsage, month, monthlyLimit);
+    if (reservedMonth) return { allowed: true, userId, dayKey, monthKey, planId, limit, monthlyLimit };
+    await settlePeriod(DailyDownloadUsage, day, false);
+    return { allowed: false, reason: "monthly", userId, dayKey, monthKey, planId, limit, monthlyLimit };
   } catch (error) {
-    if (error.code !== 11000) throw error;
+    await settlePeriod(DailyDownloadUsage, day, false);
+    throw error;
   }
-
-  const reserved = await DailyDownloadUsage.findOneAndUpdate(
-    { ...key, $expr: { $lt: [{ $add: ["$completedCount", "$reservedCount"] }, limit] } },
-    { $inc: { reservedCount: 1 } },
-    { returnDocument: "after" },
-  );
-  return { allowed: Boolean(reserved), userId, dayKey, planId, limit };
 }
 
 export async function finishDownload(reservation, completed) {
-  const update = completed
-    ? { $inc: { reservedCount: -1, completedCount: 1 } }
-    : { $inc: { reservedCount: -1 } };
-  return DailyDownloadUsage.updateOne(
-    { userId: reservation.userId, dayKey: reservation.dayKey, reservedCount: { $gte: 1 } },
-    update,
-  );
+  const [daily, monthly] = await Promise.all([
+    settlePeriod(DailyDownloadUsage, { userId: reservation.userId, dayKey: reservation.dayKey }, completed),
+    settlePeriod(MonthlyDownloadUsage, { userId: reservation.userId, monthKey: reservation.monthKey }, completed),
+  ]);
+  return { matchedCount: Math.min(daily.matchedCount, monthly.matchedCount) };
 }
 
 // Run before app.listen, when no download transfers are active in this API process.
@@ -82,9 +111,9 @@ export async function recoverDownloads(now = new Date()) {
     { $set: { status: "failed", failureReason: "server_restart", finishedAt: now } },
   );
 
-  // Completed records are durable; counters can be rebuilt after a crash at any point
-  // between reserving, recording the outcome and updating the daily total.
+  // Completed records are durable; both period counters can be rebuilt after a crash.
   await DailyDownloadUsage.updateMany({}, { $set: { completedCount: 0, reservedCount: 0 } });
+  await MonthlyDownloadUsage.updateMany({}, { $set: { completedCount: 0, reservedCount: 0 } });
   const counts = await DownloadRecord.aggregate([
     { $match: { status: "completed" } },
     { $group: { _id: { userId: "$userId", dayKey: "$dayKey" }, completedCount: { $sum: 1 } } },
@@ -93,6 +122,21 @@ export async function recoverDownloads(now = new Date()) {
     await DailyDownloadUsage.updateOne(
       { userId: count._id.userId, dayKey: count._id.dayKey },
       { $set: { completedCount: count.completedCount, reservedCount: 0 } },
+      { upsert: true },
+    );
+  }
+  const months = new Map();
+  for (const count of counts) {
+    const monthKey = count._id.dayKey.slice(0, 7);
+    const key = `${count._id.userId}:${monthKey}`;
+    const previous = months.get(key);
+    months.set(key, { userId: count._id.userId, monthKey,
+      completedCount: (previous?.completedCount || 0) + count.completedCount });
+  }
+  for (const month of months.values()) {
+    await MonthlyDownloadUsage.updateOne(
+      { userId: month.userId, monthKey: month.monthKey },
+      { $set: { completedCount: month.completedCount, reservedCount: 0 } },
       { upsert: true },
     );
   }
@@ -117,5 +161,5 @@ export async function recoverDownloads(now = new Date()) {
       { upsert: true },
     );
   }
-  return { failedRecords: failed.modifiedCount, rebuiltDays: counts.length, restoredWindows: restored.size };
+  return { failedRecords: failed.modifiedCount, rebuiltDays: counts.length, rebuiltMonths: months.size, restoredWindows: restored.size };
 }

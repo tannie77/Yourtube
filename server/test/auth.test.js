@@ -150,6 +150,10 @@ test("unfamiliar contexts require Mailpit OTP and security controls manage sessi
   });
   await new Promise((resolve) => smtp.listen(0, "127.0.0.1", resolve));
   const priorPort = process.env.MAILPIT_SMTP_PORT;
+  const priorHost = process.env.SMTP_HOST;
+  const priorDisabled = process.env.EMAIL_DELIVERY_DISABLED;
+  process.env.SMTP_HOST = "";
+  process.env.EMAIL_DELIVERY_DISABLED = "false";
   process.env.MAILPIT_SMTP_PORT = String(smtp.address().port);
 
   const email = `security-${Date.now()}@example.test`;
@@ -254,6 +258,10 @@ test("unfamiliar contexts require Mailpit OTP and security controls manage sessi
     const trustedDeviceId = overview.trustedDevices.find((device) => device.deviceModel === "iPhone").id;
     assert.equal((await request(`/user/security/trusted-devices/${trustedDeviceId}`, { method: "DELETE", headers: { cookie: verifiedCookie } })).status, 200);
   } finally {
+    if (priorHost === undefined) delete process.env.SMTP_HOST;
+    else process.env.SMTP_HOST = priorHost;
+    if (priorDisabled === undefined) delete process.env.EMAIL_DELIVERY_DISABLED;
+    else process.env.EMAIL_DELIVERY_DISABLED = priorDisabled;
     if (priorPort === undefined) delete process.env.MAILPIT_SMTP_PORT;
     else process.env.MAILPIT_SMTP_PORT = priorPort;
     await new Promise((resolve) => smtp.close(resolve));

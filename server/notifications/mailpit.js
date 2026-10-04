@@ -5,6 +5,7 @@ import { createInterface } from "node:readline";
 const emailPattern = /^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/;
 
 export async function sendLocalMail({ recipient, subject, body, fromAddress }) {
+  if (process.env.EMAIL_DELIVERY_DISABLED === "true") throw new Error("Email delivery is paused.");
   if (!emailPattern.test(recipient) || !emailPattern.test(fromAddress)) throw new Error("Invalid local email address.");
   if (typeof subject !== "string" || !subject || /[\r\n]/.test(subject)) throw new Error("Invalid local email subject.");
   const port = Number(process.env.MAILPIT_SMTP_PORT || 1025);

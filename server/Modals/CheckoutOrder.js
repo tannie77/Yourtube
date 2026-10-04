@@ -19,6 +19,9 @@ const checkoutOrderSchema = new mongoose.Schema({
   amountPaise: { type: Number, required: true, min: 1 },
   currency: { type: String, default: "INR", enum: ["INR"] },
   status: { type: String, enum: ["pending", "processing", "paid", "failed", "cancelled"], default: "pending" },
+  provider: { type: String, enum: ["local", "razorpay"], default: "local" },
+  razorpaySubscriptionId: { type: String },
+  razorpayAuthorizationPaymentId: { type: String },
   verificationSecret: { type: String, required: true, select: false },
   simulatedResult: { type: simulatedResultSchema, default: undefined },
   processingAt: { type: Date },
@@ -36,5 +39,7 @@ const checkoutOrderSchema = new mongoose.Schema({
 
 checkoutOrderSchema.index({ userId: 1, idempotencyKey: 1 }, { unique: true });
 checkoutOrderSchema.index({ userId: 1, createdAt: -1 });
+checkoutOrderSchema.index({ paymentId: 1 }, { unique: true, partialFilterExpression: { paymentId: { $type: "string" } } });
+checkoutOrderSchema.index({ razorpaySubscriptionId: 1 });
 
 export default mongoose.model("checkoutOrder", checkoutOrderSchema);

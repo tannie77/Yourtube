@@ -10,6 +10,7 @@ import app from "../app.js";
 import CallRoom from "../Modals/CallRoom.js";
 import User from "../Modals/Auth.js";
 import { attachRoomSignaling } from "../rooms/signaling.js";
+import { roomIceConfiguration } from "../rooms/ice.js";
 
 const serverDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 let database;
@@ -28,9 +29,40 @@ before(async () => {
   baseUrl = `http://127.0.0.1:${httpServer.address().port}`;
 });
 
+test("encrypted rooms require the invitation key proof before signaling access", async () => {
+  const host = await register("EncryptedHost");
+  const guest = await register("EncryptedGuest");
+  const digest = "a".repeat(64);
+  const created = await fetch(`${baseUrl}/rooms`, { method: "POST", headers: { "content-type": "application/json", cookie: host.cookie },
+    body: JSON.stringify({ title: "Protected call", e2eeKeyDigest: digest }) });
+  assert.equal(created.status, 201);
+  const room = (await created.json()).room;
+  assert.equal(room.e2eeRequired, true);
+  const guestSocket = await socket(guest.cookie);
+  assert.match((await emit(guestSocket, "room:join", { roomId: room.id })).message, /complete invitation link/);
+  assert.match((await emit(guestSocket, "room:join", { roomId: room.id, keyDigest: "b".repeat(64) })).message, /complete invitation link/);
+  assert.equal((await emit(guestSocket, "room:join", { roomId: room.id, keyDigest: digest })).ok, true);
+});
+
+test("authenticated rooms receive STUN and configured TURN servers", async () => {
+  const unauthenticated = await fetch(`${baseUrl}/rooms/ice`);
+  assert.equal(unauthenticated.status, 401);
+  const user = await register("IceUser");
+  const response = await fetch(`${baseUrl}/rooms/ice`, { headers: { cookie: user.cookie } });
+  assert.equal(response.status, 200);
+  assert.match((await response.json()).iceServers[0].urls[0], /^stun:/);
+  assert.deepEqual(roomIceConfiguration({
+    ROOM_STUN_URLS: "stun:example.org:3478",
+    ROOM_TURN_URLS: "turns:relay.example.org:5349",
+    ROOM_TURN_USERNAME: "temporary-user",
+    ROOM_TURN_CREDENTIAL: "temporary-password",
+  }), { iceServers: [{ urls: ["stun:example.org:3478"] }, { urls: ["turns:relay.example.org:5349"], username: "temporary-user", credential: "temporary-password" }], relayConfigured: true });
+});
+
 after(async () => {
   for (const client of clients) client.disconnect();
   if (signalling) await new Promise((resolve) => signalling.close(resolve));
+  await new Promise((resolve) => setTimeout(resolve, 50));
   await mongoose.disconnect();
   if (database) await database.stop();
 });

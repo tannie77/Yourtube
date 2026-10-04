@@ -4,15 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Download, Film, RefreshCw } from "lucide-react";
 import axiosInstance from "@/lib/axiosinstance";
-
-type DownloadUsage = {
-  dayKey: string;
-  planId: string;
-  limit: number;
-  completed: number;
-  pending: number;
-  remaining: number;
-};
+import { useUser } from "@/lib/AuthContext";
+import { listOfflineVideos, removeOfflineVideo, type OfflineVideo } from "@/lib/offline-library";
+import type { SubscriptionSnapshot } from "@/lib/subscriptions";
 
 type DownloadEntry = {
   id: string;
@@ -29,6 +23,14 @@ type DownloadEntry = {
   fileSize: number;
   browser: string;
   device: string;
+};
+
+type DownloadUsage = {
+  planId: string;
+  limit: number;
+  dailyRemaining: number;
+  monthlyLimit: number;
+  monthlyRemaining: number;
 };
 
 const apiBase = axiosInstance.defaults.baseURL || "http://127.0.0.1:5000";
@@ -91,25 +93,48 @@ function DownloadCard({ entry }: { entry: DownloadEntry }) {
 }
 
 export default function DownloadsPage() {
-  const [usage, setUsage] = useState<DownloadUsage | null>(null);
+  const { user } = useUser();
   const [entries, setEntries] = useState<DownloadEntry[]>([]);
+  const [offlineItems, setOfflineItems] = useState<OfflineVideo[]>([]);
+  const [offlineUrl, setOfflineUrl] = useState("");
+  const [playingKey, setPlayingKey] = useState("");
+  const [membership, setMembership] = useState<SubscriptionSnapshot | null>(null);
+  const [usage, setUsage] = useState<DownloadUsage | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [revision, setRevision] = useState(0);
 
   useEffect(() => {
+    if (!user?._id) { setOfflineItems([]); return; }
+    void listOfflineVideos(user._id).then(setOfflineItems).catch(() => setOfflineItems([]));
+    void axiosInstance.get<SubscriptionSnapshot>("/subscriptions/me").then(({ data }) => setMembership(data)).catch(() => setMembership(null));
+  }, [user?._id, revision]);
+
+  useEffect(() => () => { if (offlineUrl) URL.revokeObjectURL(offlineUrl); }, [offlineUrl]);
+
+  function playOffline(item: OfflineVideo) {
+    if (membership?.status !== "active" || membership.effectivePlanId === "free" || Date.now() >= new Date(item.accessEndsAt).getTime()) return;
+    setOfflineUrl(URL.createObjectURL(item.blob));
+    setPlayingKey(item.key);
+  }
+
+  async function removeOffline(item: OfflineVideo) {
+    await removeOfflineVideo(item.key);
+    setOfflineItems((current) => current.filter((entry) => entry.key !== item.key));
+    if (playingKey === item.key) { setPlayingKey(""); setOfflineUrl(""); }
+  }
+
+  useEffect(() => {
     let active = true;
-    void Promise.all([
-      axiosInstance.get<DownloadUsage>("/video/downloads/usage/me"),
-      axiosInstance.get<DownloadEntry[]>("/video/downloads/me"),
-    ]).then(([quota, history]) => {
+    void axiosInstance.get<DownloadUsage>("/video/downloads/usage/me")
+      .then(({ data }) => { if (active) setUsage(data); })
+      .catch(() => { if (active) setUsage(null); });
+    void axiosInstance.get<DownloadEntry[]>("/video/downloads/me").then(({ data }) => {
       if (!active) return;
-      setUsage(quota.data);
-      setEntries(history.data);
+      setEntries(data);
       setError(false);
     }).catch(() => {
       if (!active) return;
-      setUsage(null);
       setEntries([]);
       setError(true);
     })
@@ -127,26 +152,23 @@ export default function DownloadsPage() {
       <div>
         <section className="yt-downloads-hero" aria-labelledby="downloads-heading">
           <div className="pointer-events-none absolute -right-16 -top-48 hidden size-[500px] rounded-full border border-white/10 shadow-[0_0_0_54px_rgba(255,255,255,.035),0_0_0_108px_rgba(255,255,255,.02)] lg:block" aria-hidden="true" />
-          <div className="relative z-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(260px,330px)] lg:items-center">
+          <div className="relative z-10">
             <div className="max-w-[630px]">
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[#ffe7df]"><span className="size-1.5 rounded-full bg-[#ffa98e]" /> Your offline library</span>
               <h1 id="downloads-heading" className="yt-downloads-hero-title">Your <span className="text-[#ff9caa]">downloads.</span></h1>
-              <p className="yt-downloads-hero-copy max-w-[510px]">Keep track of your MP4 downloads and see how many are left today. Saved files stay in your browser’s download folder.</p>
+              <p className="yt-downloads-hero-copy max-w-[510px]">Keep track of your MP4 downloads. Saved files stay in your browser’s download folder.</p>
               {!loading && !error && <span className="mt-7 inline-flex rounded-xl border border-white/15 bg-white/10 px-3.5 py-2.5 text-xs font-semibold text-[#e5e7f0]">{entries.length} {entries.length === 1 ? "download record" : "download records"}</span>}
-            </div>
-            <div className="rounded-[20px] border border-white/15 bg-white/10 p-5 shadow-[0_20px_35px_rgba(10,12,28,.12)] backdrop-blur-sm sm:p-6" aria-label="Today's download allowance">
-              <div className="flex items-center gap-3"><span className="flex size-10 items-center justify-center rounded-xl bg-white/15 text-[#ffb29b]"><Download className="size-5" aria-hidden="true" /></span><p className="text-sm font-semibold">Today’s allowance</p></div>
-              <p className="mt-6 text-5xl font-semibold tracking-[-0.07em]">{loading ? "—" : usage ? usage.remaining : "—"}<span className="ml-2 text-base font-medium tracking-normal text-[#bac3d1]">of {usage?.limit ?? "—"} left</span></p>
-              <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/15"><div className="h-full rounded-full bg-[#ed745c]" style={{ width: `${usage ? Math.max(0, Math.min(100, (usage.completed / Math.max(1, usage.limit)) * 100)) : 0}%` }} /></div>
-              <p className="mt-3 text-xs text-[#bac3d1]">{usage ? `${usage.planId.charAt(0).toUpperCase()}${usage.planId.slice(1)} plan · resets at midnight IST` : error ? "Quota unavailable right now" : "Checking your plan and quota…"}</p>
-              {usage && <p className="mt-1 text-xs text-[#bac3d1]">{usage.completed} completed{usage.pending > 0 ? ` · ${usage.pending} pending` : ""}</p>}
+              {usage && <p className="mt-3 text-xs text-[#e5e7f0]">{usage.dailyRemaining} of {usage.limit} downloads remaining today · {usage.monthlyRemaining} of {usage.monthlyLimit} this month · {usage.planId} plan · resets on IST boundaries</p>}
             </div>
           </div>
         </section>
 
         <section className="pt-8" aria-labelledby="download-history-heading" aria-live="polite">
+          <div className="mb-8"><h2 className="text-2xl font-semibold tracking-[-0.05em]">Offline library</h2><p className="mt-1 text-sm yt-subtle">Paid members can save videos in this browser. Copies stay on this device until you remove them; playback follows your membership term.</p>
+            {offlineItems.length === 0 ? <p className="mt-4 text-sm yt-subtle">No videos saved in this browser yet.</p> : <div className="mt-4 space-y-3">{offlineItems.map((item) => <div key={item.key} className="yt-downloads-surface yt-downloads-card flex flex-wrap items-center gap-3"><span className="min-w-0 flex-1"><strong className="block truncate">{item.title}</strong><small className="yt-subtle">{item.quality} · saved {dateLabel(item.savedAt)}</small></span><button type="button" className="yt-pill-button" onClick={() => playOffline(item)} disabled={membership?.status !== "active" || membership.effectivePlanId === "free" || Date.now() >= new Date(item.accessEndsAt).getTime()}>Play offline</button><button type="button" className="yt-pill-button" onClick={() => void removeOffline(item)}>Remove</button></div>)}</div>}
+            {offlineUrl && <video key={playingKey} controls playsInline src={offlineUrl} className="mt-4 w-full max-w-[760px] rounded-xl bg-black" />}
+          </div>
           <div className="flex flex-wrap items-end justify-between gap-4">
-            <div><p className="yt-page-eyebrow">Your records</p><h2 id="download-history-heading" className="mt-1 text-2xl font-semibold tracking-[-0.05em]">Download history</h2><p className="mt-1 text-sm yt-subtle">Past records stay visible even if your membership changes.</p></div>
+            <div><h2 id="download-history-heading" className="text-2xl font-semibold tracking-[-0.05em]">Download history</h2><p className="mt-1 text-sm yt-subtle">Past records stay visible even if your membership changes.</p></div>
             <button type="button" onClick={refresh} disabled={loading} className="yt-downloads-refresh"><RefreshCw className="size-4" aria-hidden="true" /> Refresh</button>
           </div>
           {loading ? (

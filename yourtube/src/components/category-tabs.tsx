@@ -1,16 +1,11 @@
-export type FeedSort = "all" | "recent" | "popular";
+export const feedTopics = ["All", "Music", "Gaming", "Movies", "News", "Sports", "Technology", "Comedy", "Education", "Science", "Travel", "Food", "Fashion"] as const;
+export type FeedTopic = typeof feedTopics[number];
 
-const options: { id: FeedSort; label: string }[] = [
-  { id: "all", label: "All" },
-  { id: "recent", label: "Recently added" },
-  { id: "popular", label: "Most viewed" },
-];
-
-export default function CategoryTabs({ value, onChange }: { value: FeedSort; onChange: (value: FeedSort) => void }) {
+export default function CategoryTabs({ value, onChange }: { value: FeedTopic; onChange: (value: FeedTopic) => void }) {
   return (
-    <div className="yt-chip-row" role="group" aria-label="Sort videos">
-      {options.map((option) => (
-        <button key={option.id} type="button" className="yt-chip" aria-pressed={value === option.id} onClick={() => onChange(option.id)}>{option.label}</button>
+    <div className="yt-chip-row" role="group" aria-label="Video topics">
+      {feedTopics.map((topic) => (
+        <button key={topic} type="button" className="yt-chip" aria-pressed={value === topic} onClick={() => onChange(topic)}>{topic}</button>
       ))}
     </div>
   );

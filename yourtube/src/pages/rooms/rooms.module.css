@@ -1,9 +1,7 @@
 .hero, .roomHero { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 30px; overflow: hidden; border-radius: 22px; background: radial-gradient(circle at 86% 30%, rgb(255 0 51 / 26%), transparent 34%), linear-gradient(115deg, #242424, #121212 62%, #30151d); padding: clamp(30px, 4vw, 54px); color: #fff; }
 .hero { min-height: 270px; }
 .heroCopy { position: relative; z-index: 1; max-width: 690px; }
-.eyebrow { display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgb(255 255 255 / 20%); border-radius: 999px; background: rgb(255 255 255 / 8%); padding: 6px 11px; color: #ffccd3; font-size: 10px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
-.eyebrow span { width: 6px; height: 6px; border-radius: 50%; background: #ff7893; }
-.hero h1, .roomHero h1 { margin-top: 17px; font-size: clamp(34px, 4.2vw, 55px); font-weight: 780; letter-spacing: -.06em; line-height: 1.08; }
+.hero h1, .roomHero h1 { margin-top: 0; font-size: clamp(34px, 4.2vw, 55px); font-weight: 780; letter-spacing: -.06em; line-height: 1.08; }
 .hero h1 em { color: #ff91a5; font-style: normal; }
 .hero p, .roomHero p { max-width: 550px; margin-top: 14px; color: #d3d3d3; font-size: 14px; line-height: 1.65; }
 .heroFacts { display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 23px; color: #e4e4e4; font-size: 12px; font-weight: 650; }
@@ -16,7 +14,7 @@
 .heroPlay { position: absolute; inset: 51px 77px; display: grid; place-items: center; border: 1px solid rgb(255 255 255 / 22%); border-radius: 20px; background: #ef1741; box-shadow: 0 18px 45px rgb(0 0 0 / 28%); }
 .heroPlay svg { width: 32px; height: 32px; }
 .pageIntro { margin: 33px 0 18px; }
-.pageIntro h2 { margin-top: 4px; color: var(--yt-text); font-size: 23px; font-weight: 750; letter-spacing: -.04em; }
+.pageIntro h2 { color: var(--yt-text); font-size: 23px; font-weight: 750; letter-spacing: -.04em; }
 .pageIntro p { margin-top: 5px; color: var(--yt-muted); font-size: 13px; }
 .formGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .formCard, .roomCard { min-width: 0; border: 1px solid var(--yt-border); border-radius: 18px; background: var(--yt-surface); padding: 25px; }

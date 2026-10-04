@@ -10,6 +10,10 @@ const clientFields = {
   deviceModel: { type: String, default: "" },
   testCity: { type: String, default: "" },
   testState: { type: String, default: "" },
+  city: { type: String, default: "" },
+  state: { type: String, default: "" },
+  country: { type: String, default: "" },
+  approximateLocation: { type: String, default: "" },
 };
 
 const loginAttemptSchema = new mongoose.Schema({

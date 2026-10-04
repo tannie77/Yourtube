@@ -2,7 +2,7 @@ import { createHash, randomBytes, randomInt, timingSafeEqual } from "node:crypto
 import LoginAttempt from "../Modals/LoginAttempt.js";
 import OtpChallenge from "../Modals/OtpChallenge.js";
 import TrustedDevice from "../Modals/TrustedDevice.js";
-import { sendLocalMail } from "../notifications/mailpit.js";
+import { sendPlatformEmail } from "../subscriptions/receipts.js";
 
 const OTP_MINUTES = 10;
 const MAX_OTP_ATTEMPTS = 5;
@@ -36,6 +36,10 @@ export function contextFields(context) {
     deviceModel: context.deviceModel,
     testCity: context.testCity,
     testState: context.testState,
+    city: context.city,
+    state: context.state,
+    country: context.country,
+    approximateLocation: context.approximateLocation,
   };
 }
 
@@ -96,25 +100,28 @@ export async function startOtpChallenge(user, context) {
   });
 
   try {
-    const location = [context.testCity, context.testState].filter(Boolean).join(", ") || "No local test location supplied";
-    await sendLocalMail({
-      recipient: user.email,
-      fromAddress: "security@yourtube.local",
-      subject: "YourTube local sign-in code",
-      body: [
-        "YourTube local sign-in verification",
+    const location = [context.city, context.state, context.country].filter(Boolean).join(", ") ||
+      [context.testCity, context.testState].filter(Boolean).join(", ") || "Location unavailable";
+    const localDelivery = !process.env.SMTP_HOST;
+    await sendPlatformEmail(
+      user.email,
+      localDelivery ? "YourTube local sign-in code" : "YourTube sign-in code",
+      [
+        localDelivery ? "YourTube local sign-in verification" : "YourTube sign-in verification",
         "",
         `Hello ${user.name},`,
         `Your one-time code is: ${code}`,
         "",
         `Browser: ${context.browser}${context.browserVersion ? ` ${context.browserVersion}` : ""}`,
         `Device: ${context.deviceModel || context.deviceType}`,
-        `Local test location: ${location}`,
+        `Approximate location: ${location}`,
         `The code expires in ${OTP_MINUTES} minutes.`,
         "",
-        "This message was captured by the local Mailpit inbox and was not sent externally.",
+        ...(localDelivery ? ["This message was captured by the local Mailpit inbox and was not sent externally."] : []),
       ].join("\r\n"),
-    });
+      null,
+      "security@yourtube.local",
+    );
     return { challenge, token, expiresAt };
   } catch (error) {
     await OtpChallenge.deleteOne({ _id: challenge._id });

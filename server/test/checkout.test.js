@@ -273,6 +273,10 @@ test("paid orders produce an owner-only receipt and send one local SMTP message"
   });
   await new Promise((resolve) => smtp.listen(0, "127.0.0.1", resolve));
   const priorPort = process.env.MAILPIT_SMTP_PORT;
+  const priorHost = process.env.SMTP_HOST;
+  const priorDisabled = process.env.EMAIL_DELIVERY_DISABLED;
+  process.env.SMTP_HOST = "";
+  process.env.EMAIL_DELIVERY_DISABLED = "false";
   process.env.MAILPIT_SMTP_PORT = String(smtp.address().port);
   try {
     const owner = await account("receipt-owner");
@@ -284,9 +288,16 @@ test("paid orders produce an owner-only receipt and send one local SMTP message"
     assert.equal(receipt.data.receipt.amountPaise, 19900);
     assert.equal(receipt.data.receipt.emailStatus, "sent");
     assert.equal((await api(`/orders/${paid.orderId}/receipt`, { cookie: stranger.cookie })).status, 404);
+    const invoice = await fetch(`${baseUrl}/subscriptions/orders/${paid.orderId}/invoice`, { headers: { cookie: owner.cookie } });
+    assert.equal(invoice.status, 200);
+    assert.match(await invoice.text(), /YourTube test invoice/);
+    assert.equal((await fetch(`${baseUrl}/subscriptions/orders/${paid.orderId}/invoice`, { headers: { cookie: stranger.cookie } })).status, 404);
     assert.equal(messages.length, 1);
     assert.match(messages[0], /No money was charged/);
     assert.match(messages[0], /silver/i);
+    const attachment = messages[0].match(/Content-Disposition: attachment; filename="YourTube-test-invoice\.html"\n\n([A-Za-z0-9+/=\n]+)/);
+    assert.ok(attachment, "receipt email includes a printable test invoice attachment");
+    assert.match(Buffer.from(attachment[1].replace(/\s/g, ""), "base64").toString("utf8"), /YourTube test invoice/);
     const retried = await api(`/orders/${paid.orderId}/receipt/send`, { cookie: owner.cookie, method: "POST" });
     assert.equal(retried.data.order.receiptStatus, "sent");
     assert.equal(messages.length, 1);
@@ -301,6 +312,10 @@ test("paid orders produce an owner-only receipt and send one local SMTP message"
     assert.equal(deliveredLater.data.order.receiptStatus, "sent");
     assert.equal(messages.length, 2);
   } finally {
+    if (priorHost === undefined) delete process.env.SMTP_HOST;
+    else process.env.SMTP_HOST = priorHost;
+    if (priorDisabled === undefined) delete process.env.EMAIL_DELIVERY_DISABLED;
+    else process.env.EMAIL_DELIVERY_DISABLED = priorDisabled;
     if (priorPort === undefined) delete process.env.MAILPIT_SMTP_PORT;
     else process.env.MAILPIT_SMTP_PORT = priorPort;
     await new Promise((resolve) => smtp.close(resolve));

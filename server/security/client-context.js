@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { approximateGeoLocation } from "./geoip.js";
 
 const MAX_LOCATION_LENGTH = 80;
 
@@ -63,14 +64,28 @@ export function clientContext(request, input = {}) {
   const validDeviceId = /^[A-Za-z0-9_-]{16,160}$/.test(suppliedDeviceId) ? suppliedDeviceId : "";
   const { browser, browserVersion } = parseBrowser(userAgent);
   const { os, deviceType, deviceModel } = parseDevice(userAgent);
-  const ip = normaliseIp(request.socket?.remoteAddress || request.ip || "");
+  const peerIp = normaliseIp(request.socket?.remoteAddress || request.ip || "");
+  const trustedProxies = (process.env.TRUSTED_PROXY_IPS || "").split(",").map((value) => normaliseIp(value)).filter(Boolean);
+  const forwarded = trustedProxies.includes(peerIp) ? String(request.get("x-forwarded-for") || "").split(",").at(-1)?.trim() : "";
+  const ip = normaliseIp(forwarded || peerIp);
   const testCity = cleanText(input.testCity);
   const testState = cleanText(input.testState);
   const deviceHash = digest(validDeviceId || `fallback:${userAgent || "unknown-client"}`);
   const fingerprintHash = digest([browser, browserVersion, os, deviceType, deviceModel].join("|"));
   const contextHash = digest([deviceHash, fingerprintHash, ip, testCity.toLowerCase(), testState.toLowerCase()].join("|"));
 
-  return { deviceHash, contextHash, ip, userAgent, browser, browserVersion, os, deviceType, deviceModel, testCity, testState };
+  return { deviceHash, contextHash, ip, userAgent, browser, browserVersion, os, deviceType, deviceModel, testCity, testState, city: "", state: "", country: "", approximateLocation: "" };
+}
+
+export async function resolvedClientContext(request, input = {}) {
+  const context = clientContext(request, input);
+  const location = await approximateGeoLocation(context.ip);
+  if (!location) return context;
+  const fingerprint = digest([context.browser, context.browserVersion, context.os, context.deviceType, context.deviceModel].join("|"));
+  return {
+    ...context, ...location,
+    contextHash: digest([context.deviceHash, fingerprint, context.ip, location.city.toLowerCase(), location.state.toLowerCase(), location.country.toLowerCase()].join("|")),
+  };
 }
 
 export function publicClientContext(record) {
@@ -83,5 +98,9 @@ export function publicClientContext(record) {
     deviceModel: record.deviceModel || "",
     testCity: record.testCity || "",
     testState: record.testState || "",
+    city: record.city || "",
+    state: record.state || "",
+    country: record.country || "",
+    approximateLocation: record.approximateLocation || "",
   };
 }

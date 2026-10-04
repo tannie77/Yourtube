@@ -15,12 +15,13 @@ function AppPage({ Component, pageProps }: AppProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isSignInPage = router.pathname === "/sign-in";
+  const isPublicPage = ["/", "/explore", "/subscriptions", "/search"].includes(router.pathname);
 
   useEffect(() => {
-    if (router.isReady && !isSignInPage && !loading && !user) {
+    if (router.isReady && !isSignInPage && !isPublicPage && !loading && !user) {
       void router.replace("/sign-in");
     }
-  }, [isSignInPage, loading, router, user]);
+  }, [isSignInPage, isPublicPage, loading, router, user]);
 
   useEffect(() => { setMobileMenuOpen(false); }, [router.asPath]);
 
@@ -30,7 +31,7 @@ function AppPage({ Component, pageProps }: AppProps) {
   };
 
   if (isSignInPage) return <Component {...pageProps} />;
-  if (loading || !user) {
+  if (!isPublicPage && (loading || !user)) {
     return <main className="yt-app flex min-h-screen items-center justify-center text-sm yt-subtle">Opening YourTube…</main>;
   }
 
@@ -47,7 +48,7 @@ function AppPage({ Component, pageProps }: AppProps) {
 export default function App(props: AppProps) {
   return (
     <UserProvider>
-      <Head><title>YourTube 2.0</title></Head>
+      <Head><title>YourTube 2.0</title><link rel="icon" href="/favicon.ico" /></Head>
       <Toaster />
       <AppPage {...props} />
     </UserProvider>

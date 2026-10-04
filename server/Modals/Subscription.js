@@ -8,6 +8,16 @@ const subscriptionSchema = new mongoose.Schema({
   startedAt: { type: Date, required: true },
   expiresAt: { type: Date, required: true },
   cancelAtPeriodEnd: { type: Boolean, default: false },
+  provider: { type: String, enum: ["local", "razorpay"], default: "local" },
+  razorpaySubscriptionId: { type: String },
+  autoRenew: { type: Boolean, default: false },
+  nextRenewalAt: { type: Date },
+  pendingProviderChange: {
+    planId: { type: String, enum: paidPlanIds },
+    billingCycle: { type: String, enum: billingCycles.map((cycle) => cycle.id) },
+    requestedAt: Date,
+    startsAt: Date,
+  },
   lastOrderId: { type: mongoose.Schema.Types.ObjectId, ref: "checkoutOrder" },
   scheduledChange: {
     planId: { type: String, enum: paidPlanIds },
@@ -17,5 +27,7 @@ const subscriptionSchema = new mongoose.Schema({
     orderId: { type: mongoose.Schema.Types.ObjectId, ref: "checkoutOrder" },
   },
 }, { timestamps: true });
+
+subscriptionSchema.index({ razorpaySubscriptionId: 1 }, { unique: true, partialFilterExpression: { razorpaySubscriptionId: { $type: "string" } } });
 
 export default mongoose.model("subscription", subscriptionSchema);

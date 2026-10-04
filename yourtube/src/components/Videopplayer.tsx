@@ -91,9 +91,6 @@ export default function VideoPlayer({ video, nextVideo, onLoaded, theatreMode = 
   const [progressState, setProgressState] = useState<"loading" | "ready" | "error">("loading");
   const [resumeAt, setResumeAt] = useState(0);
   const [completed, setCompleted] = useState(false);
-  const [watchedSeconds, setWatchedSeconds] = useState(0);
-  const [completionPercent, setCompletionPercent] = useState(90);
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [quality, setQuality] = useState<VideoQuality>(video.qualityOptions?.filter((item) => item.allowed).at(-1)?.quality || video.sourceQuality || "480p");
   const [captionUrl, setCaptionUrl] = useState("");
   const [captionsOn, setCaptionsOn] = useState(false);
@@ -149,7 +146,6 @@ export default function VideoPlayer({ video, nextVideo, onLoaded, theatreMode = 
     if (saveInFlight.current || pendingSave.current === null) return;
     const save = pendingSave.current;
     pendingSave.current = null;
-    if (alive.current) setSaveState("saving");
     let succeeded = false;
     const request = axiosInstance.put<WatchProgress>(`/video/${video._id}/progress`, save, { timeout: 10000 })
       .then(({ data }) => {
@@ -157,8 +153,6 @@ export default function VideoPlayer({ video, nextVideo, onLoaded, theatreMode = 
         lastSavedPosition.current = save.positionSeconds;
         if (alive.current) {
           setCompleted(data.completed);
-          setWatchedSeconds(data.watchedSeconds);
-          setSaveState("saved");
         }
       })
       .catch(() => {
@@ -166,7 +160,6 @@ export default function VideoPlayer({ video, nextVideo, onLoaded, theatreMode = 
         pendingSave.current = next
           ? { ...next, watchedSecondsDelta: next.watchedSecondsDelta + save.watchedSecondsDelta }
           : save;
-        if (alive.current) setSaveState("error");
       })
       .finally(() => {
         saveInFlight.current = null;
@@ -200,8 +193,6 @@ export default function VideoPlayer({ video, nextVideo, onLoaded, theatreMode = 
         lastSavedPosition.current = data.positionSeconds;
         setResumeAt(resume);
         setCompleted(data.completed);
-        setWatchedSeconds(data.watchedSeconds);
-        setCompletionPercent(data.completionPercent);
         progressReady.current = true;
         setProgressState("ready");
       })
@@ -324,11 +315,11 @@ export default function VideoPlayer({ video, nextVideo, onLoaded, theatreMode = 
   }, [revealControls]);
   const changeSpeed = useCallback((next: number) => {
     const element = videoRef.current;
-    if (!element || !speeds.some((item) => item === next)) return;
+    if (!element || !speeds.some((item) => item === next) || next > (video.maxPlaybackSpeed || 1.25)) return;
     element.playbackRate = next;
     setSpeed(next);
     revealControls();
-  }, [revealControls]);
+  }, [revealControls, video.maxPlaybackSpeed]);
   const stepSpeed = useCallback((direction: number) => {
     const index = speeds.findIndex((item) => item === (videoRef.current?.playbackRate ?? 1));
     changeSpeed(speeds[Math.max(0, Math.min(speeds.length - 1, (index < 0 ? 1 : index) + direction))]);
@@ -522,16 +513,15 @@ export default function VideoPlayer({ video, nextVideo, onLoaded, theatreMode = 
           <PlayerButton label={captionsOn ? "Turn captions off" : "Turn captions on"} title="Captions (C)" pressed={captionsOn} disabled={!video.hasCaptions} onClick={toggleCaptions}><Captions className="size-5" aria-hidden="true" /></PlayerButton>
           <label className="sr-only" htmlFor={`speed-${video._id}`}>Playback speed</label>
           <select id={`speed-${video._id}`} value={speed} onChange={(event) => changeSpeed(Number(event.target.value))} title="Playback speed (, / .)"
-            className="h-9 rounded-lg bg-white/10 px-2 text-xs font-semibold text-white outline-none transition hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-[#ff647d] sm:h-10 sm:text-sm">{speeds.map((item) => <option key={item} value={item} className="bg-[#202020] text-white">{item}×</option>)}</select>
+            className="h-9 rounded-lg bg-white/10 px-2 text-xs font-semibold text-white outline-none transition hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-[#ff647d] sm:h-10 sm:text-sm">{speeds.filter((item) => item <= (video.maxPlaybackSpeed || 1.25)).map((item) => <option key={item} value={item} className="bg-[#202020] text-white">{item}×</option>)}</select>
           <PlayerButton label={theatreMode ? "Exit theatre mode" : "Theatre mode"} title="Theatre mode (T)" pressed={theatreMode} onClick={toggleTheatre}>{theatreMode ? <Shrink className="size-5" aria-hidden="true" /> : <Expand className="size-5" aria-hidden="true" />}</PlayerButton>
           <PlayerButton label={pictureInPicture ? "Exit Picture-in-Picture" : "Picture-in-Picture"} title="Picture-in-Picture (P)" pressed={pictureInPicture} onClick={() => { void togglePictureInPicture(); }}><PictureInPicture2 className="size-5" aria-hidden="true" /></PlayerButton>
           <PlayerButton label={fullscreen ? "Exit full screen" : "Full screen"} title="Full screen (F)" pressed={fullscreen} onClick={() => { void toggleFullscreen(); }}>{fullscreen ? <Minimize className="size-5" aria-hidden="true" /> : <Maximize className="size-5" aria-hidden="true" />}</PlayerButton>
           <PlayerButton label="Keyboard shortcuts" title="Keyboard shortcuts (?)" pressed={showShortcuts} onClick={() => setShowShortcuts((value) => !value)}><Keyboard className="size-5" aria-hidden="true" /></PlayerButton>
         </div>
       </div>
-      <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] font-medium text-white/70 sm:text-xs">
+      <div className="mt-1 text-[11px] font-medium text-white/70 sm:text-xs">
         <span aria-live="off">{formatTime(currentTime)} / {formatTime(playableDuration)} <span className="text-white/40">·</span> -{formatTime(remaining)}</span>
-        <span className="inline-flex items-center gap-1.5 text-white/55">{progressState === "loading" ? "Checking saved position…" : progressState === "error" ? "Position saving unavailable" : saveState === "saving" ? "Saving position…" : saveState === "error" ? "Position not saved" : completed ? `Completed · ${completionPercent}% watched` : `${playableDuration > 0 ? Math.floor(watchedSeconds / playableDuration * 100) : 0}% watched · saves every 5 seconds`}</span>
       </div>
     </div>
   </div>;

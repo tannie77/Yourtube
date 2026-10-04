@@ -7,7 +7,7 @@ export default function SearchPage() {
   return (
     <main className="yt-page yt-page-narrow">
       <div className="yt-page-header">
-        <div><span className="yt-page-eyebrow">Discover</span><h1 className="yt-page-title">Search results</h1>{query && <p className="yt-page-description">Showing videos matching “{query}”</p>}</div>
+        <div><h1 className="yt-page-title">Search results</h1>{query && <p className="yt-page-description">Showing videos matching “{query}”</p>}</div>
       </div>
       <SearchResult query={query} />
     </main>

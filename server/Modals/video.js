@@ -21,6 +21,7 @@ const videoschema = mongoose.Schema(
     captionFilename: { type: String, default: null },
     previewCount: { type: Number, default: 0 },
     earlyAccessUntil: { type: Date, default: null },
+    isCourse: { type: Boolean, default: false },
   },
   {
     timestamps: true,

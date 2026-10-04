@@ -1,11 +1,13 @@
 import { createHash, randomInt } from "node:crypto";
 import Comment from "../Modals/comment.js";
 import CommentReaction from "../Modals/CommentReaction.js";
+import CommentReport from "../Modals/CommentReport.js";
 import CommentAttempt from "../Modals/CommentAttempt.js";
 import CommentFingerprint from "../Modals/CommentFingerprint.js";
 import User from "../Modals/Auth.js";
 import { accessibleVideo, validCommentId } from "../security/comment-access.js";
-import { commentSafetyError } from "../security/comment-safety.js";
+import { commentFingerprint, commentSafetyError } from "../security/comment-safety.js";
+import { turnstileConfigured, verifyTurnstile } from "../security/comment-captcha.js";
 
 const MAX_COMMENT_LENGTH = 2000;
 const SORT_MODES = ["newest", "oldest", "liked", "relevant"];
@@ -79,6 +81,7 @@ function serialize(comment, userId, reaction = {}) {
     likes: comment.deletedAt ? 0 : reaction.likes || 0,
     dislikes: comment.deletedAt ? 0 : reaction.dislikes || 0,
     viewerReaction: comment.deletedAt ? null : reaction.viewerReaction || null,
+    viewerReported: Boolean(reaction.viewerReported),
   };
 }
 
@@ -142,10 +145,15 @@ async function postingWindow(request, response) {
   }
   if (attempt.count > 3 && !attempt.challengeSolved) {
     const answer = request.body?.captchaAnswer;
-    if (Number.isInteger(answer) && answer === attempt.challengeA + attempt.challengeB) {
+    const passed = turnstileConfigured()
+      ? await verifyTurnstile(request.body?.captchaToken, request.socket.remoteAddress)
+      : Number.isInteger(answer) && answer === attempt.challengeA + attempt.challengeB;
+    if (passed) {
       await CommentAttempt.updateOne({ _id: attempt._id }, { $set: { challengeSolved: true } });
     } else {
-      response.status(428).json({ message: "Solve the local check to continue posting.", challenge: { question: `${attempt.challengeA} + ${attempt.challengeB} = ?` } });
+      response.status(428).json(turnstileConfigured()
+        ? { message: "Complete the verification to continue posting.", challenge: { provider: "turnstile", siteKey: process.env.TURNSTILE_SITE_KEY } }
+        : { message: "Solve the local check to continue posting.", challenge: { provider: "local", question: `${attempt.challengeA} + ${attempt.challengeB} = ?` } });
       return false;
     }
   }
@@ -153,7 +161,7 @@ async function postingWindow(request, response) {
 }
 
 async function reserveFingerprint(userId, videoId, body) {
-  const digest = createHash("sha256").update(body.toLocaleLowerCase().replace(/\s+/gu, " ")).digest("hex");
+  const digest = createHash("sha256").update(commentFingerprint(body)).digest("hex");
   const key = { userId, videoId, digest };
   await CommentFingerprint.deleteOne({ ...key, expiresAt: { $lte: new Date() } });
   try {
@@ -218,8 +226,16 @@ export async function getallcomment(request, response) {
       .populate("userid", "name username image location")
       .populate("mentions", "name username")
       .lean();
-    const reactions = await reactionStats(comments.map((comment) => comment._id), request.user._id);
-    const items = comments.map((comment) => serialize(comment, request.user._id, reactions.get(String(comment._id))));
+    const ids = comments.map((comment) => comment._id);
+    const [reactions, reports] = await Promise.all([
+      reactionStats(ids, request.user._id),
+      CommentReport.find({ commentId: { $in: ids }, reporterId: request.user._id }).select("commentId").lean(),
+    ]);
+    const reportedIds = new Set(reports.map((report) => String(report.commentId)));
+    const items = comments.map((comment) => {
+      const id = String(comment._id);
+      return serialize(comment, request.user._id, { ...reactions.get(id), viewerReported: reportedIds.has(id) });
+    });
     return response.json({ comments: sortComments(items, sort), sort, editWindowMinutes });
   } catch (error) {
     console.error("Could not load comments:", error);

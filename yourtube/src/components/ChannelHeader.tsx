@@ -11,7 +11,6 @@ export default function ChannelHeader({ channel }: { channel: { _id: string; cha
       <div className="yt-channel-header">
         <span className="yt-channel-avatar" aria-hidden="true">{name[0]?.toUpperCase() || "Y"}</span>
         <div className="min-w-0 flex-1">
-          <span className="yt-page-eyebrow">Your channel</span>
           <h1 className="yt-channel-name">{name}</h1>
           <p className="yt-video-meta">@{name.toLowerCase().replace(/\s+/g, "")}</p>
           {channel.description && <p className="yt-channel-description">{channel.description}</p>}

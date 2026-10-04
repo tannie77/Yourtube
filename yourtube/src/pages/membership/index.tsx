@@ -22,6 +22,18 @@ import styles from "./membership.module.css";
 type LoadState = "loading" | "ready" | "error";
 type PaidPlanId = Exclude<Plan["id"], "free">;
 type CheckoutSelection = { planId: PaidPlanId; billingCycle: BillingCycleId };
+type RazorpaySuccess = { razorpay_payment_id: string; razorpay_subscription_id: string; razorpay_signature: string };
+
+async function loadRazorpayCheckout() {
+  if ((window as Window & { Razorpay?: unknown }).Razorpay) return;
+  await new Promise<void>((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Could not load Razorpay Test checkout."));
+    document.head.append(script);
+  });
+}
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeZone: "Asia/Kolkata" }).format(new Date(value));
@@ -50,11 +62,14 @@ const intentLabel = {
 
 const comparisonRows: { label: string; value: (plan: Plan) => string }[] = [
   { label: "Maximum source resolution", value: (plan) => plan.features.maxQuality },
+  { label: "Maximum playback speed", value: (plan) => `${plan.features.maxPlaybackSpeed}×` },
   { label: "Daily clip allowance", value: (plan) => formatWatchLimit(plan.features.dailyWatchMinutes) },
   { label: "Daily downloads", value: (plan) => String(plan.features.dailyDownloads) },
+  { label: "Monthly downloads", value: (plan) => String(plan.features.monthlyDownloads) },
   { label: "Premium videos", value: (plan) => plan.features.premiumAccess },
   { label: "Early access", value: (plan) => plan.features.earlyAccess ? "Included" : "—" },
-  { label: "Exclusive courses (planned)", value: (plan) => plan.features.exclusiveCourses ? "Planned" : "—" },
+  { label: "Exclusive courses", value: (plan) => plan.features.exclusiveCourses ? "Included" : "—" },
+  { label: "Browser offline library", value: (plan) => plan.id === "free" ? "—" : "Included" },
   { label: "Ad-free local demo", value: (plan) => plan.features.adFree ? "Included" : "—" },
 ];
 
@@ -76,6 +91,7 @@ export default function MembershipPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [selection, setSelection] = useState<CheckoutSelection | null>(null);
   const [checkoutOrder, setCheckoutOrder] = useState<CheckoutOrder | null>(null);
+  const [razorpayOrder, setRazorpayOrder] = useState<CheckoutOrder | null>(null);
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [accountBusy, setAccountBusy] = useState(false);
@@ -167,9 +183,67 @@ export default function MembershipPage() {
     }
   };
 
+  const openRazorpay = async (order: CheckoutOrder) => {
+    if (!catalogue?.razorpayKeyId || !order.razorpaySubscriptionId) throw new Error("Razorpay Test checkout is not configured.");
+    await loadRazorpayCheckout();
+    const Checkout = (window as Window & { Razorpay?: new (options: Record<string, unknown>) => { open: () => void } }).Razorpay;
+    if (!Checkout) throw new Error("Razorpay Test checkout did not load.");
+    new Checkout({ key: catalogue.razorpayKeyId, subscription_id: order.razorpaySubscriptionId,
+      name: "YourTube", description: `${order.planId} · ${order.billingCycle} (Test mode)`,
+      prefill: { name: user?.name || "", email: user?.email || "" },
+      handler: async (result: RazorpaySuccess) => {
+        try {
+          const response = await axiosInstance.post<{ order: CheckoutOrder; message: string }>("/subscriptions/razorpay/confirm", { orderId: order.orderId, ...result });
+          setRazorpayOrder(response.data.order);
+          setCheckoutError(null);
+          setAccountMessage(response.data.message);
+          await refreshMembership();
+        } catch (error) { setCheckoutError(errorMessage(error, "Could not confirm Razorpay Test authorization.")); }
+      },
+      modal: { ondismiss: () => setAccountMessage("Razorpay Test checkout was closed. You can reopen the pending order from payment history.") },
+    }).open();
+  };
+
+  const beginRazorpay = async () => {
+    if (!selection || checkoutBusy) return;
+    setCheckoutBusy(true); setCheckoutError(null);
+    try {
+      const response = await axiosInstance.post<{ order: CheckoutOrder }>("/subscriptions/razorpay/start", {
+        ...selection, idempotencyKey: crypto.randomUUID(),
+      });
+      setRazorpayOrder(response.data.order);
+      await refreshMembership();
+      await openRazorpay(response.data.order);
+    } catch (error) { setCheckoutError(errorMessage(error, error instanceof Error ? error.message : "Could not start Razorpay Test checkout.")); }
+    finally { setCheckoutBusy(false); }
+  };
+
+  const requestRazorpayChange = async () => {
+    if (!selection || accountBusy) return;
+    setAccountBusy(true); setAccountMessage(null);
+    try {
+      const response = await axiosInstance.post<{ message: string }>("/subscriptions/me/change", selection);
+      setAccountMessage(response.data.message);
+      await refreshMembership();
+    } catch (error) { setAccountMessage(errorMessage(error, "Could not change the recurring plan.")); }
+    finally { setAccountBusy(false); }
+  };
+
+  const abandonRazorpayCheckout = async (order: CheckoutOrder) => {
+    setCheckoutBusy(true); setCheckoutError(null);
+    try {
+      await axiosInstance.post(`/subscriptions/razorpay/orders/${order.orderId}/abandon`);
+      setRazorpayOrder(null);
+      await refreshMembership();
+      setAccountMessage("Unstarted Razorpay Test checkout cancelled.");
+    } catch (error) { setCheckoutError(errorMessage(error, "Could not cancel the pending checkout.")); }
+    finally { setCheckoutBusy(false); }
+  };
+
   const choosePlan = (planId: PaidPlanId, cycle: BillingCycleId) => {
     setSelection({ planId, billingCycle: cycle });
     setCheckoutOrder(null);
+    setRazorpayOrder(null);
     setCheckoutError(null);
     checkoutKey.current = null;
     requestAnimationFrame(() => document.getElementById("local-checkout")?.scrollIntoView({ behavior: "smooth", block: "center" }));
@@ -262,14 +336,11 @@ export default function MembershipPage() {
           <div className={styles.heroGlow} aria-hidden="true" />
           <div className="relative z-10 flex flex-col gap-9 lg:flex-row lg:items-center lg:justify-between">
             <div className="max-w-[610px]">
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[#ffded4]">
-                <span className="size-1.5 rounded-full bg-[#ffae98]" /> YourTube membership
-              </span>
               <h1 className="workspace-hero-title">
                 A plan for every <span className="text-[#ffb39f]">way to watch.</span>
               </h1>
               <p className="workspace-hero-copy max-w-[510px]">
-                Compare sample memberships, then try a local checkout. Every result is simulated; no card details or real money are involved.
+                Compare memberships, then use {catalogue?.razorpayTestConfigured ? "Razorpay Test checkout or the local simulation" : "the local simulation"}. No real money is charged.
               </p>
               <div className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-xs font-medium text-[#d9deea]">
                 <span className="inline-flex items-center gap-2"><ShieldCheck className="size-4 text-[#ffad97]" aria-hidden="true" /> No real payments</span>
@@ -291,7 +362,7 @@ export default function MembershipPage() {
                   subscription?.status === "expired" ? "Your previous term expired. Free benefits are active." :
                   subscription?.cancelAtPeriodEnd && accessEnd ? `Cancellation scheduled · access ends ${accessEnd}.` :
                   subscription?.scheduledChange && expiry ? `${activePlan?.name} until ${expiry}; ${scheduledPlan?.name || subscription.scheduledChange.planId} starts next.` :
-                  expiry ? `${subscription?.remainingDays} days remaining · until ${expiry}` : "Free is active with no expiry date."}
+                  expiry ? `${subscription?.remainingDays} days remaining · until ${expiry}${subscription?.autoRenew && subscription.nextRenewalAt ? ` · renews ${formatDate(subscription.nextRenewalAt)}` : ""}` : "Free is active with no expiry date."}
               </p>
               <p className="mt-4 truncate text-xs text-[#bfc6d7]">Signed in as {user?.email || "your local account"}</p>
             </div>
@@ -317,9 +388,8 @@ export default function MembershipPage() {
             <section className="mt-8" aria-labelledby="plan-heading">
               <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#e16b55] dark:text-[#ff9b87]">Choose what suits you</p>
-                  <h2 id="plan-heading" className="mt-1 text-2xl font-semibold tracking-[-0.05em]">Compare memberships</h2>
-                  <p className="mt-1.5 text-sm text-[#7a8494] dark:text-[#aab5c8]">Sample prices for a local checkout. Downloads are available now; ads and courses will join the app in later slices.</p>
+                  <h2 id="plan-heading" className="text-2xl font-semibold tracking-[-0.05em]">Compare memberships</h2>
+                  <p className="mt-1.5 text-sm text-[#7a8494] dark:text-[#aab5c8]">Compare video access, quality, download limits, offline saving, early access and courses.</p>
                 </div>
                 <div role="group" aria-label="Billing period" className="inline-flex self-start rounded-2xl border border-[#e7eaf0] dark:border-[#3b465f] bg-workspace-surface p-1.5 shadow-[0_6px_18px_rgba(23,32,51,0.04)]">
                   {catalogue.billingCycles.map((cycle) => (
@@ -345,7 +415,7 @@ export default function MembershipPage() {
                         <span className="text-[32px] font-semibold tracking-[-0.065em]">{formatRupees(plan.pricesPaise[billingCycle])}</span>
                         <span className="text-xs text-[#8a93a2] dark:text-[#aab5c8]">{plan.id === "free" ? "forever" : billingCycle === "monthly" ? "/mo" : billingCycle === "quarterly" ? "/quarter" : "/year"}</span>
                       </div>
-                      <p className="mt-1 text-xs text-[#8a93a2] dark:text-[#aab5c8]">{plan.id === "free" ? "Always available" : `${activeCycle?.validityDays} days of access · one-time term`}</p>
+                      <p className="mt-1 text-xs text-[#8a93a2] dark:text-[#aab5c8]">{plan.id === "free" ? "Always available" : `${activeCycle?.validityDays} days of access${catalogue.razorpayTestConfigured ? " · test renewal available" : " · one-time local term"}`}</p>
                       <div className="my-6 h-px bg-[#edf0f4] dark:bg-[#263149]" />
                       <ul className="flex-1 space-y-3.5 text-sm text-[#586579] dark:text-[#e6ecf7]">
                         <li className="flex gap-2.5"><Check className="mt-0.5 size-4 shrink-0 text-[#df705a] dark:text-[#ff9b87]" aria-hidden="true" /> Up to {plan.features.maxQuality} video</li>
@@ -355,31 +425,31 @@ export default function MembershipPage() {
                       </ul>
                       {plan.id === "free" ? (
                         <div className="mt-8 flex h-11 items-center justify-center rounded-xl border border-[#dce8e1] dark:border-[#49685a] bg-[#f4faf6] dark:bg-[#273d3a] text-sm font-semibold text-[#418064] dark:text-[#91d7ae]">{isCurrent ? "Your current plan" : "Available after expiry"}</div>
-                      ) : subscription.scheduledChange ? (
+                      ) : subscription.scheduledChange || subscription.pendingProviderChange ? (
                         <div className="mt-8 flex h-11 items-center justify-center rounded-xl border border-dashed border-[#d8dde5] dark:border-[#3b465f] bg-[#f8f9fb] dark:bg-[#263149] text-sm font-semibold text-[#7e899b] dark:text-[#aab5c8]">Change already scheduled</div>
                       ) : (
                         <button type="button" className="yt-primary-button mt-8 flex h-11 items-center justify-center gap-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--yt-red)]" onClick={() => choosePlan(plan.id as PaidPlanId, billingCycle)}>
-                          {subscription.status !== "active" ? "Try local checkout" : isCurrent ? "Renew plan" : catalogue.plans.findIndex((item) => item.id === plan.id) > currentRank ? "Upgrade plan" : "Schedule downgrade"} <ArrowRight className="size-4" aria-hidden="true" />
+                          {subscription.status !== "active" ? "Choose plan" : subscription.paymentProvider === "razorpay" ? "Change recurring plan" : isCurrent ? "Renew plan" : catalogue.plans.findIndex((item) => item.id === plan.id) > currentRank ? "Upgrade plan" : "Schedule downgrade"} <ArrowRight className="size-4" aria-hidden="true" />
                         </button>
                       )}
                     </article>
                   );
                 })}
               </div>
-              <p className="mt-4 text-xs leading-5 text-[#8790a0] dark:text-[#aab5c8]">{catalogue.pricingNote} Video access, player quality controls, daily watch and download allowances, Gold early access, and the local ad placeholder work now. No ad network is connected. Courses are planned for later.</p>
+              <p className="mt-4 text-xs leading-5 text-[#8790a0] dark:text-[#aab5c8]">{catalogue.pricingNote} Gold course and priority access, browser offline saving, and plan limits are enforced. Ad-free applies to the in-app ad placeholder; no external ad network is connected.</p>
             </section>
 
             {subscription.status === "active" && (
               <section className="mt-8 flex flex-col gap-5 workspace-surface workspace-card sm:flex-row sm:items-center sm:justify-between" aria-label="Manage current term">
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#e16b55] dark:text-[#ff9b87]">Current term</p>
-                  <h2 className="mt-1 text-lg font-semibold text-[#263148] dark:text-[#e6ecf7]">{activePlan?.name} · {subscription.remainingDays} days remaining</h2>
+                  <h2 className="text-lg font-semibold text-[#263148] dark:text-[#e6ecf7]">{activePlan?.name} · {subscription.remainingDays} days remaining</h2>
                   <p className="mt-1.5 text-sm leading-6 text-[#768295] dark:text-[#aab5c8]">
                     {subscription.scheduledChange
                       ? `${scheduledPlan?.name || subscription.scheduledChange.planId} begins ${formatDate(subscription.scheduledChange.startsAt)} and runs until ${formatDate(subscription.scheduledChange.expiresAt)}.`
-                      : `Current access ends ${expiry}. Renew manually; there are no automatic charges.`}
+                      : subscription.autoRenew && subscription.nextRenewalAt ? `Current term ends ${expiry}. Razorpay Test next renews ${formatDate(subscription.nextRenewalAt)}.` : `Current access ends ${expiry}. Renew manually.`}
                   </p>
                   {subscription.cancelAtPeriodEnd && <p className="mt-2 text-xs font-semibold text-[#a45c4b] dark:text-[#ff9b87]">Cancellation scheduled after the last prepaid term on {accessEnd}.</p>}
+                  {subscription.pendingProviderChange && <p className="mt-2 text-xs font-semibold text-[#a45c4b] dark:text-[#ff9b87]">{subscription.pendingProviderChange.planId} · {subscription.pendingProviderChange.billingCycle} change pending Razorpay confirmation{subscription.pendingProviderChange.startsAt ? ` from ${formatDate(subscription.pendingProviderChange.startsAt)}` : ""}.</p>}
                   {accountMessage && <p role="status" className="mt-2 text-xs text-[#a45c4b] dark:text-[#ff9b87]">{accountMessage}</p>}
                 </div>
                 {!subscription.cancelAtPeriodEnd && (
@@ -395,26 +465,30 @@ export default function MembershipPage() {
                 <div className="flex items-start gap-4">
                   <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[#fff0ec] dark:bg-[#43313a] text-[#de6b54] dark:text-[#ff9b87]"><CreditCard className="size-5" aria-hidden="true" /></span>
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#e16b55] dark:text-[#ff9b87]">Safe local demo</p>
-                    <h2 id="checkout-heading" className="mt-1 text-2xl font-semibold tracking-[-0.05em]">Test checkout</h2>
+                    <h2 id="checkout-heading" className="text-2xl font-semibold tracking-[-0.05em]">Test checkout</h2>
                   </div>
                 </div>
-                <p className="mt-5 text-sm leading-6 text-[#6e798b] dark:text-[#aab5c8]">Buy, renew or change a paid plan with a server-priced test order. Choose a simulated result; no payment provider is contacted.</p>
+                <p className="mt-5 text-sm leading-6 text-[#6e798b] dark:text-[#aab5c8]">{subscription.paymentProvider === "razorpay" && subscription.status === "active" ? "Change the recurring plan. New benefits begin after Razorpay confirms the charge." : catalogue.razorpayTestConfigured ? "Choose Razorpay Test for recurring billing, or try the local simulation." : "Use a server-priced local test order. Choose a simulated result; no payment provider is contacted."}</p>
                 {selection && selectedPlan ? (
                   <div className="mt-6 rounded-2xl border border-[#e9ecf1] dark:border-[#3b465f] bg-[#fafbfc] dark:bg-[#263149] p-5">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#8a94a3] dark:text-[#aab5c8]">Selected membership</p>
                         <p className="mt-1 text-lg font-semibold text-[#253047] dark:text-[#e6ecf7]">{selectedPlan.name} · {selectedCycle?.label}</p>
-                        <p className="mt-1 text-xs text-[#828d9e] dark:text-[#aab5c8]">{selectedCycle?.validityDays} days · one-time local term</p>
+                        <p className="mt-1 text-xs text-[#828d9e] dark:text-[#aab5c8]">{selectedCycle?.validityDays} days per term</p>
                         <p className="mt-2 text-xs font-semibold text-[#bc6956] dark:text-[#ff9b87]">{intentLabel[effectiveIntent]}: {effectiveIntent === "renewal" ? "extends from current expiry" : effectiveIntent === "downgrade" ? "prepaid term starts after current expiry" : effectiveIntent === "upgrade" ? "starts now; unused time is not prorated" : "starts after verified test success"}.</p>
                       </div>
                       <p className="text-xl font-semibold text-[#253047] dark:text-[#e6ecf7]">{formatRupees(selectedPlan.pricesPaise[selection.billingCycle])}</p>
                     </div>
-                    {!checkoutOrder ? (
+                    {subscription.paymentProvider === "razorpay" && subscription.status === "active" ? (
+                      <button type="button" disabled={accountBusy} className="yt-primary-button mt-5 min-h-11" onClick={() => void requestRazorpayChange()}>{accountBusy ? "Requesting…" : "Request Razorpay Test plan change"}</button>
+                    ) : !checkoutOrder ? (
+                      <div className="mt-5 flex flex-wrap gap-2">
+                      {catalogue.razorpayTestConfigured && subscription.status !== "active" && <button type="button" disabled={checkoutBusy} className="yt-primary-button min-h-11" onClick={() => void beginRazorpay()}>{checkoutBusy ? "Opening…" : "Open Razorpay Test"}</button>}
                       <button type="button" disabled={checkoutBusy || Boolean(subscription.scheduledChange)} className="yt-primary-button mt-5 min-h-11 disabled:cursor-not-allowed" onClick={beginCheckout}>
                         {checkoutBusy ? "Creating order…" : "Create local test order"} <ArrowRight className="size-4" aria-hidden="true" />
                       </button>
+                      </div>
                     ) : (
                       <div className="mt-5 border-t border-[#e6e9ee] dark:border-[#3b465f] pt-5">
                         <div className="flex flex-wrap items-center gap-2">
@@ -450,6 +524,7 @@ export default function MembershipPage() {
                         {checkoutOrder.invoiceNumber && <p className="mt-2 text-xs text-[#7a8494] dark:text-[#aab5c8]">Reference: {checkoutOrder.invoiceNumber}</p>}
                       </div>
                     )}
+                    {razorpayOrder?.status === "pending" && <div className="mt-4 text-sm"><p>Razorpay Test subscription {razorpayOrder.razorpaySubscriptionId}. Access begins after its charge webhook is verified.</p><div className="mt-2 flex flex-wrap gap-3"><button type="button" className="yt-pill-button" onClick={() => void openRazorpay(razorpayOrder).catch((error) => setCheckoutError(error instanceof Error ? error.message : "Could not reopen checkout."))}>Reopen checkout</button><button type="button" className="yt-pill-button" onClick={() => void refreshMembership()}>Refresh status</button><button type="button" disabled={checkoutBusy} className="yt-pill-button" onClick={() => void abandonRazorpayCheckout(razorpayOrder)}>Cancel unstarted checkout</button></div></div>}
                   </div>
                 ) : (
                   <div className="mt-6 rounded-2xl border border-dashed border-[#dce1e9] dark:border-[#3b465f] bg-[#fafbfc] dark:bg-[#263149] px-5 py-7 text-sm text-[#8993a2] dark:text-[#aab5c8]">Select Bronze, Silver or Gold to begin.</div>
@@ -460,10 +535,9 @@ export default function MembershipPage() {
               <div className="workspace-surface workspace-card">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#e16b55] dark:text-[#ff9b87]">Your account</p>
-                    <h2 className="mt-1 text-2xl font-semibold tracking-[-0.05em]">Payment history</h2>
+                    <h2 className="text-2xl font-semibold tracking-[-0.05em]">Payment history</h2>
                   </div>
-                  <span className="rounded-full bg-[#f2f4f8] dark:bg-[#263149] px-3 py-1 text-xs font-semibold text-[#707d90] dark:text-[#aab5c8]">Local only</span>
+                  <span className="rounded-full bg-[#f2f4f8] dark:bg-[#263149] px-3 py-1 text-xs font-semibold text-[#707d90] dark:text-[#aab5c8]">Test payments</span>
                 </div>
                 {orders.length === 0 ? (
                   <p className="mt-6 rounded-2xl bg-[#fafbfc] dark:bg-[#263149] px-5 py-8 text-sm text-[#8993a2] dark:text-[#aab5c8]">Your local test orders will appear here.</p>
@@ -475,26 +549,27 @@ export default function MembershipPage() {
                           <div>
                             <p className="text-sm font-semibold capitalize text-[#2b3549] dark:text-[#e6ecf7]">{order.planId} · {order.billingCycle}</p>
                             <p className="mt-0.5 text-xs font-medium text-[#bc6956] dark:text-[#ff9b87]">{intentLabel[order.intent]}</p>
-                            <p className="mt-1 text-xs text-[#8b95a4] dark:text-[#aab5c8]">{formatDate(order.createdAt)} · {order.orderId.slice(-8).toUpperCase()}</p>
+                            <p className="mt-1 text-xs text-[#8b95a4] dark:text-[#aab5c8]">{formatDate(order.createdAt)} · {order.orderId.slice(-8).toUpperCase()} · {order.provider === "razorpay" ? "Razorpay Test" : "local simulation"}</p>
                           </div>
                           <p className="text-sm font-semibold text-[#2b3549] dark:text-[#e6ecf7]">{formatRupees(order.amountPaise)}</p>
                         </div>
                         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                           <span className={`${styles.statusBadge} ${styles[`status${order.status}`]}`}>{order.status}</span>
-                          {(order.status === "pending" || order.status === "processing") && <button type="button" className="text-xs font-semibold text-[#d8614c] dark:text-[#ff9b87] hover:underline" onClick={() => resumeOrder(order)}>Resume test</button>}
+                          {(order.status === "pending" || order.status === "processing") && <button type="button" className="text-xs font-semibold text-[#d8614c] dark:text-[#ff9b87] hover:underline" onClick={() => { if (order.provider === "razorpay") { setRazorpayOrder(order); void openRazorpay(order).catch((error) => setCheckoutError(error instanceof Error ? error.message : "Could not reopen checkout.")); } else resumeOrder(order); }}>Resume test</button>}
                           {order.status === "paid" && <button type="button" className="text-xs font-semibold text-[#d8614c] dark:text-[#ff9b87] hover:underline" onClick={() => viewReceipt(order)}>View test receipt</button>}
                         </div>
                         {order.invoiceNumber && <p className="mt-2 text-xs text-[#8590a0] dark:text-[#aab5c8]">Reference: {order.invoiceNumber}</p>}
-                        {order.status === "paid" && <p className="mt-1 text-xs text-[#8590a0] dark:text-[#aab5c8]">Email: {order.receiptStatus === "sent" ? "captured by local inbox" : "waiting for local inbox"}</p>}
+                        {order.status === "paid" && <a className="mt-1 inline-block text-xs font-semibold text-[#d8614c] dark:text-[#ff9b87] hover:underline" href={`${axiosInstance.defaults.baseURL || "http://127.0.0.1:5000"}/subscriptions/orders/${order.orderId}/invoice`} target="_blank" rel="noopener noreferrer">Open test invoice</a>}
+                        {order.status === "paid" && <p className="mt-1 text-xs text-[#8590a0] dark:text-[#aab5c8]">Email: {order.receiptStatus === "sent" ? "sent" : "awaiting delivery"}</p>}
                       </li>
                     ))}
                   </ol>
                 )}
                 {receipt && (
-                  <div className="mt-5 rounded-2xl border border-[#efd8d1] dark:border-[#73505a] bg-[#fffaf7] dark:bg-[#43313a] p-5" aria-label="Local test receipt">
+                  <div className="mt-5 rounded-2xl border border-[#efd8d1] dark:border-[#73505a] bg-[#fffaf7] dark:bg-[#43313a] p-5" aria-label="Test payment receipt">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#bc6956] dark:text-[#ff9b87]">Local test receipt</p>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#bc6956] dark:text-[#ff9b87]">Test receipt and invoice details</p>
                         <h3 className="mt-1 text-base font-semibold text-[#263148] dark:text-[#e6ecf7]">{receipt.planName} · {receipt.billingCycle}</h3>
                       </div>
                       <p className="text-lg font-semibold text-[#263148] dark:text-[#e6ecf7]">{formatRupees(receipt.amountPaise)}</p>
@@ -504,11 +579,14 @@ export default function MembershipPage() {
                       <div><dt className="font-semibold text-[#344056] dark:text-[#e6ecf7]">Test payment</dt><dd className="mt-0.5 break-all">{receipt.paymentId}</dd></div>
                       <div><dt className="font-semibold text-[#344056] dark:text-[#e6ecf7]">Term</dt><dd className="mt-0.5">{receipt.termStartsAt && receipt.termExpiresAt ? `${formatDate(receipt.termStartsAt)} – ${formatDate(receipt.termExpiresAt)}` : "See membership status"}</dd></div>
                       <div><dt className="font-semibold text-[#344056] dark:text-[#e6ecf7]">Recipient</dt><dd className="mt-0.5 break-all">{receipt.recipient}</dd></div>
+                      <div><dt className="font-semibold text-[#344056] dark:text-[#e6ecf7]">Support</dt><dd className="mt-0.5 break-all">{receipt.supportEmail}</dd></div>
+                      {receipt.sellerName && <div><dt className="font-semibold text-[#344056] dark:text-[#e6ecf7]">Seller</dt><dd className="mt-0.5">{receipt.sellerName} · {receipt.sellerAddress || "Address not configured"} · {receipt.sellerGstin || "GSTIN not configured"}</dd></div>}
+                      {receipt.taxPaise !== null && <div><dt className="font-semibold text-[#344056] dark:text-[#e6ecf7]">Tax</dt><dd className="mt-0.5">{formatRupees(receipt.taxPaise)} at {receipt.taxRatePercent}% (included)</dd></div>}
                     </dl>
                     <p className="mt-4 text-xs leading-5 text-[#8a776f] dark:text-[#aab5c8]">{receipt.notice}</p>
                     <div className="mt-3 flex flex-wrap items-center gap-3">
-                      <span className={`${styles.statusBadge} ${receipt.emailStatus === "sent" ? styles.statuspaid : styles.statuspending}`}>{receipt.emailStatus === "sent" ? "Mailpit delivery sent" : receipt.emailStatus === "sending" ? "Sending to Mailpit" : receipt.emailStatus === "pending" ? "Waiting for local inbox" : "Mailpit unavailable"}</span>
-                      {receipt.emailStatus !== "sent" && <button type="button" disabled={receiptBusy} className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#d8614c] dark:text-[#ff9b87] hover:underline disabled:opacity-50" onClick={resendReceipt}><Mail className="size-4" aria-hidden="true" /> {receiptBusy ? "Retrying…" : "Retry local email"}</button>}
+                      <span className={`${styles.statusBadge} ${receipt.emailStatus === "sent" ? styles.statuspaid : styles.statuspending}`}>{receipt.emailStatus === "sent" ? `Sent to ${receipt.deliveryMode}` : receipt.emailStatus === "sending" ? "Sending email" : receipt.emailStatus === "pending" ? "Waiting for email" : "Email unavailable"}</span>
+                      {receipt.emailStatus !== "sent" && <button type="button" disabled={receiptBusy} className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#d8614c] dark:text-[#ff9b87] hover:underline disabled:opacity-50" onClick={resendReceipt}><Mail className="size-4" aria-hidden="true" /> {receiptBusy ? "Retrying…" : "Retry email"}</button>}
                     </div>
                   </div>
                 )}
@@ -519,10 +597,9 @@ export default function MembershipPage() {
             <section className="mt-8" aria-labelledby="features-heading">
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#e16b55] dark:text-[#ff9b87]">The details</p>
-                  <h2 id="features-heading" className="mt-1 text-2xl font-semibold tracking-[-0.05em]">Feature comparison</h2>
+                  <h2 id="features-heading" className="text-2xl font-semibold tracking-[-0.05em]">Feature comparison</h2>
                 </div>
-                <span className="rounded-full bg-[#fff0ec] dark:bg-[#43313a] px-3 py-1.5 text-xs font-semibold text-[#c66450] dark:text-[#ff9b87]">Current and planned benefits</span>
+                <span className="rounded-full bg-[#fff0ec] dark:bg-[#43313a] px-3 py-1.5 text-xs font-semibold text-[#c66450] dark:text-[#ff9b87]">Plan benefits</span>
               </div>
               <div className="mt-5 overflow-x-auto workspace-surface">
                 <table className="w-full min-w-[710px] border-collapse text-left text-sm">
@@ -544,7 +621,7 @@ export default function MembershipPage() {
               <div className="flex size-11 items-center justify-center rounded-2xl bg-[#f3f0ff] dark:bg-[#35314b] text-[#7966ac] dark:text-[#c9baff]"><ShieldCheck className="size-5" aria-hidden="true" /></div>
               <div>
                 <h2 className="text-base font-semibold">Simple local membership rules</h2>
-                <p className="mt-1.5 max-w-[920px] text-sm leading-6 text-[#737e90] dark:text-[#aab5c8]">A verified renewal extends the current expiry. Upgrades start immediately without prorating unused time. A verified downgrade is prepaid and begins at the end of the current term. Cancellation ends access after all prepaid terms. Nothing renews or charges automatically.</p>
+                <p className="mt-1.5 max-w-[920px] text-sm leading-6 text-[#737e90] dark:text-[#aab5c8]">Local simulation terms renew manually. Razorpay Test subscriptions renew automatically after a verified charge, until cancelled or the provider term ends. Plan changes take effect when Razorpay confirms the charge. Cancellation keeps paid access through the current term.</p>
               </div>
             </section>
           </>

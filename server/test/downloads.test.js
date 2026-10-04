@@ -13,7 +13,9 @@ import app from "../app.js";
 import { uploadDirectory } from "../filehelp/filehelp.js";
 import Video from "../Modals/video.js";
 import Subscription from "../Modals/Subscription.js";
+import TrustedDevice from "../Modals/TrustedDevice.js";
 import DailyDownloadUsage from "../Modals/DailyDownloadUsage.js";
+import MonthlyDownloadUsage from "../Modals/MonthlyDownloadUsage.js";
 import DownloadRecord from "../Modals/DownloadRecord.js";
 import DownloadWindow from "../Modals/DownloadWindow.js";
 import { removeGeneratedAssets } from "../video/assets.js";
@@ -42,6 +44,7 @@ before(async () => {
   database = await MongoMemoryServer.create({ instance: { ip: "127.0.0.1" }, binary: { downloadDir: path.join(serverDirectory, ".local-data", "binaries") } });
   await mongoose.connect(database.getUri("yourtube2_download_test"));
   await DailyDownloadUsage.init();
+  await MonthlyDownloadUsage.init();
   await DownloadWindow.init();
   httpServer = await new Promise((resolve) => { const server = app.listen(0, "127.0.0.1", () => resolve(server)); });
   baseUrl = `http://127.0.0.1:${httpServer.address().port}`;
@@ -145,6 +148,8 @@ test("one Free download succeeds, consumes its quota and leaves watch minutes un
   assert.deepEqual(Buffer.from(await download.arrayBuffer()), freeSample);
   const after = await completedUsage(viewer.cookie, 1);
   assert.equal(after.remaining, 0);
+  assert.equal(after.monthlyCompleted, 1);
+  assert.equal(after.monthlyRemaining, 19);
   assert.equal(after.dayKey.length, 10);
   const duplicate = await get(route, viewer.cookie);
   assert.equal(duplicate.status, 409);
@@ -216,6 +221,32 @@ test("Bronze gets three allowed-quality downloads, then expiry removes premium a
   assert.equal(expiredHistory.length, 3);
   assert.ok(expiredHistory.every((entry) => entry.title.startsWith("Bronze HD demo") && entry.planId === "bronze" && entry.status === "completed"));
   assert.equal((await get(`/video/downloads/${expiredHistory[0].id}/thumbnail`, viewer.cookie)).status, 200);
+});
+
+test("optional trusted-browser setting blocks unverified download requests", async () => {
+  const owner = await register("Trusted Download Owner");
+  const viewer = await register("Trusted Download Viewer");
+  await createChannel(owner);
+  const video = await upload(owner, "Trusted download demo", freeSample);
+  const route = `/video/${video._id}/download`;
+  const enabled = await fetch(`${baseUrl}/user/preferences/download-security`, {
+    method: "PATCH", headers: { "content-type": "application/json", cookie: viewer.cookie },
+    body: JSON.stringify({ restrictDownloadsToTrustedDevices: true }),
+  });
+  assert.equal(enabled.status, 200);
+  assert.equal((await enabled.json()).restrictDownloadsToTrustedDevices, true);
+
+  const unverified = await get(route, viewer.cookie, { "x-yourtube-device-id": "different_test_device_123" });
+  assert.equal(unverified.status, 403);
+  assert.equal((await unverified.json()).code, "TRUSTED_DEVICE_REQUIRED");
+  assert.equal((await downloadUsageSnapshot(viewer.user._id, null)).remaining, 1);
+
+  const allowed = await get(route, viewer.cookie);
+  assert.equal(allowed.status, 200);
+  await allowed.arrayBuffer();
+  await completedUsage(viewer.cookie, 1);
+  await TrustedDevice.deleteMany({ userId: viewer.user._id });
+  assert.equal((await get(route, viewer.cookie)).status, 403);
 });
 
 test("a 30-minute same-video guard does not consume a second slot and expires", async () => {
@@ -336,6 +367,7 @@ test("startup recovery reconciles unfinished records, orphan slots and completed
   assert.ok(restoredGuard.retryAt > new Date());
   await recoverDownloads();
   assert.equal((await downloadUsageSnapshot(completedViewer.user._id, null)).completed, 1);
+  assert.equal((await downloadUsageSnapshot(completedViewer.user._id, null)).monthlyCompleted, 1);
   assert.equal((await DownloadRecord.findById(interruptedId).lean()).status, "failed");
 });
 
@@ -355,4 +387,31 @@ test("concurrent reservations obey the Free limit and reset at IST midnight", as
   assert.equal((await downloadUsageSnapshot(viewer.user._id, null, afterMidnight)).remaining, 0);
   await finishDownload(nextDay, false);
   assert.equal((await downloadUsageSnapshot(viewer.user._id, null, afterMidnight)).remaining, 1);
+});
+
+test("monthly reservations are atomic and reset at the IST month boundary", async () => {
+  const viewer = await register("Monthly Viewer");
+  const lastSeptemberSecond = new Date("2026-09-30T18:29:59.000Z");
+  const firstOctoberSecond = new Date("2026-09-30T18:30:00.000Z");
+  const subscription = await Subscription.create({ userId: viewer.user._id, planId: "bronze", billingCycle: "monthly",
+    startedAt: new Date("2026-09-01T00:00:00.000Z"), expiresAt: new Date("2026-11-01T00:00:00.000Z") });
+  await MonthlyDownloadUsage.create({ userId: viewer.user._id, monthKey: "2026-09", completedCount: 59 });
+
+  const attempts = await Promise.all(Array.from({ length: 12 }, () => reserveDownload(viewer.user._id, subscription, lastSeptemberSecond)));
+  assert.equal(attempts.filter((attempt) => attempt.allowed).length, 1);
+  assert.ok(attempts.some((attempt) => !attempt.allowed && attempt.reason === "monthly"));
+  await finishDownload(attempts.find((attempt) => attempt.allowed), true);
+  const september = await downloadUsageSnapshot(viewer.user._id, subscription, lastSeptemberSecond);
+  assert.equal(september.monthlyCompleted, 60);
+  assert.equal(september.monthlyRemaining, 0);
+  assert.equal(september.pending, 0);
+  assert.equal(september.monthlyPending, 0);
+
+  const october = await reserveDownload(viewer.user._id, subscription, firstOctoberSecond);
+  assert.equal(october.allowed, true);
+  assert.equal(october.monthKey, "2026-10");
+  await finishDownload(october, false);
+  const reset = await downloadUsageSnapshot(viewer.user._id, subscription, firstOctoberSecond);
+  assert.equal(reset.monthlyRemaining, 60);
+  assert.equal(reset.remaining, 3);
 });

@@ -21,16 +21,17 @@ type CommentRecord = {
   likes: number;
   dislikes: number;
   viewerReaction: "like" | "dislike" | null;
+  viewerReported: boolean;
 };
 type SortMode = "newest" | "oldest" | "liked" | "relevant";
 type CommentResponse = { comments: CommentRecord[]; sort: SortMode; editWindowMinutes: number };
 type Action = { kind: "reply" | "edit" | "delete"; id: string } | null;
-type Challenge = { parentId: string | null; question: string } | null;
+type Challenge = ({ parentId: string | null; provider: "local"; question: string } | { parentId: string | null; provider: "turnstile"; siteKey: string }) | null;
 type HistoryEntry = { revision: number; action: string; commentbody: string; changedAt: string };
 type Translation = { text: string; revision: number; language: string };
 
 const maxCommentLength = 2000;
-const languageNames: Record<string, string> = { en: "English", hi: "Hindi", es: "Spanish" };
+const languageNames: Record<string, string> = { en: "English", hi: "Hindi", es: "Spanish", fr: "French", ur: "Urdu" };
 
 function commentLength(value: string) { return Array.from(value.trim()).length; }
 
@@ -46,6 +47,48 @@ function timeLabel(value: string) {
 
 function CommentAvatar({ name, image }: { name: string; image?: string | null }) {
   return <span className="yt-comment-avatar" aria-hidden="true">{image?.startsWith("data:image/") ? <img src={image} alt="" /> : name.charAt(0).toUpperCase() || "U"}</span>;
+}
+
+type TurnstileApi = { render: (element: HTMLElement, options: Record<string, unknown>) => string; remove: (id: string) => void };
+type TurnstileWindow = Window & { turnstile?: TurnstileApi };
+function TurnstileChallenge({ siteKey, onToken }: { siteKey: string; onToken: (token: string) => void }) {
+  const container = useRef<HTMLDivElement>(null);
+  const callback = useRef(onToken);
+  const [loadError, setLoadError] = useState(false);
+  useEffect(() => { callback.current = onToken; }, [onToken]);
+  useEffect(() => {
+    let current = true;
+    let widgetId: string | null = null;
+    const scriptUrl = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+    let script = document.querySelector<HTMLScriptElement>(`script[src="${scriptUrl}"]`);
+    function render() {
+      const api = (window as TurnstileWindow).turnstile;
+      if (!current || !container.current || !api || widgetId !== null) return;
+      widgetId = api.render(container.current, {
+        sitekey: siteKey,
+        callback: (token: string) => callback.current(token),
+        "expired-callback": () => callback.current(""),
+        "error-callback": () => callback.current(""),
+      });
+    }
+    if (!script) {
+      script = document.createElement("script");
+      script.src = scriptUrl;
+      script.async = true;
+      document.head.appendChild(script);
+    }
+    script.addEventListener("load", render);
+    script.addEventListener("error", () => setLoadError(true), { once: true });
+    render();
+    const retry = window.setTimeout(render, 500);
+    return () => {
+      current = false;
+      window.clearTimeout(retry);
+      script?.removeEventListener("load", render);
+      if (widgetId !== null) (window as TurnstileWindow).turnstile?.remove(widgetId);
+    };
+  }, [siteKey]);
+  return <div className="yt-comment-challenge"><p>Complete the posting verification, then post again.</p><div ref={container} />{loadError && <p role="alert">Verification could not load. Check your connection and try again.</p>}</div>;
 }
 
 function CommentBody({ body, mentions }: { body: string; mentions: MentionUser[] }) {
@@ -103,6 +146,8 @@ export default function Comments({ videoId }: { videoId: string }) {
   const [activeAction, setActiveAction] = useState<Action>(null);
   const [challenge, setChallenge] = useState<Challenge>(null);
   const [challengeAnswer, setChallengeAnswer] = useState("");
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [challengeKey, setChallengeKey] = useState(0);
   const [historyId, setHistoryId] = useState<string | null>(null);
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -149,14 +194,20 @@ export default function Comments({ videoId }: { videoId: string }) {
       await axiosInstance.post(`/comment/${videoId}`, {
         commentbody: body, parentId,
         ...(challenge?.parentId === parentId && /^\d+$/.test(challengeAnswer) ? { captchaAnswer: Number(challengeAnswer) } : {}),
+        ...(challenge?.parentId === parentId && captchaToken ? { captchaToken } : {}),
       });
       setChallenge(null);
       setChallengeAnswer("");
+      setCaptchaToken("");
       if (parentId) { setActiveAction(null); setActionText(""); } else setRootText("");
       refresh();
     } catch (failure) {
-      if (failure instanceof AxiosError && failure.response?.status === 428 && typeof failure.response.data?.challenge?.question === "string") {
-        setChallenge({ parentId, question: failure.response.data.challenge.question });
+      if (failure instanceof AxiosError && failure.response?.status === 428 && failure.response.data?.challenge?.provider === "turnstile" && typeof failure.response.data.challenge.siteKey === "string") {
+        setChallenge({ parentId, provider: "turnstile", siteKey: failure.response.data.challenge.siteKey });
+        setCaptchaToken("");
+        setChallengeKey((value) => value + 1);
+      } else if (failure instanceof AxiosError && failure.response?.status === 428 && typeof failure.response.data?.challenge?.question === "string") {
+        setChallenge({ parentId, provider: "local", question: failure.response.data.challenge.question });
         setChallengeAnswer("");
       } else setError(errorMessage(failure));
     } finally { setBusy(false); }
@@ -280,12 +331,14 @@ export default function Comments({ videoId }: { videoId: string }) {
     setError("");
     setChallenge(null);
     setChallengeAnswer("");
+    setCaptchaToken("");
     setActionText(kind === "edit" ? comment.commentbody || "" : "");
     setActiveAction({ kind, id: comment._id });
   }
 
   function challengeField(parentId: string | null) {
     if (challenge?.parentId !== parentId) return null;
+    if (challenge.provider === "turnstile") return <TurnstileChallenge key={challengeKey} siteKey={challenge.siteKey} onToken={setCaptchaToken} />;
     return <div className="yt-comment-challenge"><label htmlFor={`comment-check-${parentId || "root"}`}>Local posting check: {challenge.question}</label><input id={`comment-check-${parentId || "root"}`} inputMode="numeric" value={challengeAnswer} onChange={(event) => setChallengeAnswer(event.target.value)} /><p>Enter the answer and post again.</p></div>;
   }
 
@@ -304,7 +357,7 @@ export default function Comments({ videoId }: { videoId: string }) {
       <article className="yt-comment-item">
         <CommentAvatar name={comment.author.name} image={comment.author.image} />
         <div className="yt-comment-main">
-          <div className="yt-comment-byline"><strong>{comment.author.name}</strong>{comment.author.username && <span>@{comment.author.username}</span>}<time dateTime={comment.createdAt} title={timeLabel(comment.createdAt)}>{formatDistanceToNow(new Date(comment.createdAt))} ago</time>{comment.editedAt && !comment.deletedAt && <span>· Edited</span>}</div>
+          <div className="yt-comment-byline"><strong>{comment.author.name}</strong>{comment.author.username && <span>@{comment.author.username}</span>}<time dateTime={comment.createdAt}>{formatDistanceToNow(new Date(comment.createdAt))} ago <span>· {timeLabel(comment.createdAt)}</span></time>{comment.editedAt && !comment.deletedAt && <span>· Edited</span>}</div>
           <p className="yt-comment-location"><MapPin aria-hidden="true" />{comment.author.location || "Location not shared"}</p>
           {comment.deletedAt ? <p className="yt-comment-deleted">Comment deleted</p> : <CommentBody body={comment.commentbody || ""} mentions={comment.mentions || []} />}
           {!comment.deletedAt && translations[comment._id]?.revision === comment.revision && translations[comment._id]?.language === (user?.preferredLanguage || "en") && <div className="yt-comment-translation"><strong>{languageNames[translations[comment._id].language]} translation · local model</strong><p>{translations[comment._id].text}</p></div>}
@@ -315,7 +368,7 @@ export default function Comments({ videoId }: { videoId: string }) {
             {comment.canEdit && <><button type="button" onClick={() => openAction("edit", comment)}><Pencil aria-hidden="true" />Edit</button><button type="button" onClick={() => openAction("delete", comment)}><Trash2 aria-hidden="true" />Delete</button></>}
             {comment.author._id === user?._id && comment.revision > 1 && <button type="button" onClick={() => void toggleHistory(comment)}><History aria-hidden="true" />History</button>}
             {!comment.deletedAt && <button type="button" disabled={translatingId === comment._id} onClick={() => void translate(comment)}><Languages aria-hidden="true" />{translatingId === comment._id ? "Translating…" : translations[comment._id]?.revision === comment.revision && translations[comment._id]?.language === (user?.preferredLanguage || "en") ? "Hide translation" : `Translate to ${languageNames[user?.preferredLanguage || "en"]}`}</button>}
-            {!comment.deletedAt && comment.author._id !== user?._id && (reportedIds.has(comment._id) ? <span className="yt-comment-reported">Reported for review</span> : <button type="button" onClick={() => { setReportingId(comment._id); setReportReason("spam"); }}><Flag aria-hidden="true" />Report</button>)}
+            {!comment.deletedAt && comment.author._id !== user?._id && (reportedIds.has(comment._id) || comment.viewerReported ? <span className="yt-comment-reported">Reported for review</span> : <button type="button" onClick={() => { setReportingId(comment._id); setReportReason("spam"); }}><Flag aria-hidden="true" />Report</button>)}
           </div>
           {reportingId === comment._id && <div className="yt-comment-report"><label htmlFor={`report-reason-${comment._id}`}>Why report this comment?</label><select id={`report-reason-${comment._id}`} value={reportReason} onChange={(event) => setReportReason(event.target.value)}><option value="spam">Spam</option><option value="harassment">Harassment</option><option value="offensive">Offensive content</option></select><button type="button" className="yt-primary-button" disabled={busy} onClick={() => void sendReport(comment)}>Send report</button><button type="button" className="yt-comment-cancel" onClick={() => setReportingId(null)}>Cancel</button></div>}
           {(action === "reply" || action === "edit") && <div className="yt-comment-inline-editor"><MentionEditor id={`comment-action-${comment._id}`} value={actionText} onChange={setActionText} placeholder={action === "reply" ? `Reply to ${comment.author.name}` : "Edit your comment"} />{action === "reply" && challengeField(comment._id)}<div className="yt-comment-editor-footer"><span>{commentLength(actionText)} / {maxCommentLength} · Type @ to mention</span><div><button type="button" className="yt-comment-cancel" disabled={busy} onClick={() => setActiveAction(null)}>Cancel</button><button type="button" className="yt-primary-button" disabled={busy || !commentLength(actionText) || commentLength(actionText) > maxCommentLength} onClick={() => action === "reply" ? void postComment(comment._id) : void editComment(comment)}>{busy ? "Saving…" : action === "reply" ? "Post reply" : "Save changes"}</button></div></div></div>}
@@ -328,10 +381,10 @@ export default function Comments({ videoId }: { videoId: string }) {
   }
 
   return <section className="yt-comments" aria-labelledby="comments-heading">
-    <div className="yt-comments-heading"><div><span className="yt-page-eyebrow">Conversation</span><h2 id="comments-heading"><MessageCircle aria-hidden="true" />{activeCount} {activeCount === 1 ? "comment" : "comments"}</h2></div><label className="yt-comments-sort">Sort by <select value={sort} onChange={(event) => setSort(event.target.value as SortMode)}><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="liked">Most liked</option><option value="relevant">Most relevant</option></select></label></div>
+    <div className="yt-comments-heading"><div><h2 id="comments-heading"><MessageCircle aria-hidden="true" />{activeCount} {activeCount === 1 ? "comment" : "comments"}</h2></div><label className="yt-comments-sort">Sort by <select value={sort} onChange={(event) => setSort(event.target.value as SortMode)}><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="liked">Most liked</option><option value="relevant">Most relevant</option></select></label></div>
     <p className="yt-comments-note"><Clock3 aria-hidden="true" /> Edit or delete your comments within {editWindowMinutes} minutes.</p>
     <div className="yt-comment-profile-bar"><span>Posting as <strong>@{user?.username || "member"}</strong></span><button type="button" onClick={openProfile}>Edit comment profile</button></div>
-    {profileOpen && <div className="yt-comment-profile"><div><strong>Your comment profile</strong><p>Location is self-reported. Your picture is stored in local MongoDB.</p></div><div className="yt-comment-profile-picture"><CommentAvatar name={user?.name || "You"} image={profileImage === undefined ? user?.image : profileImage} /><label><ImagePlus aria-hidden="true" />Choose picture<input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => void choosePicture(event.target.files?.[0])} className="sr-only" /></label><button type="button" onClick={() => setProfileImage(null)}>Remove picture</button></div><div className="yt-comment-profile-fields"><label>Location<input value={profileLocation} onChange={(event) => setProfileLocation(event.target.value)} maxLength={80} placeholder="e.g. Pune, India" /></label><label>Translate comments to<select value={profileLanguage} onChange={(event) => setProfileLanguage(event.target.value)}><option value="en">English</option><option value="hi">Hindi</option><option value="es">Spanish</option></select></label></div>{profileError && <p role="alert" className="yt-comment-error">{profileError}</p>}<div className="yt-comment-profile-actions"><button type="button" className="yt-comment-cancel" disabled={profileBusy} onClick={() => setProfileOpen(false)}>Cancel</button><button type="button" className="yt-primary-button" disabled={profileBusy} onClick={() => void saveProfile()}>{profileBusy ? "Saving…" : "Save profile"}</button></div></div>}
+    {profileOpen && <div className="yt-comment-profile"><div><strong>Your comment profile</strong><p>Location is self-reported. Your picture is stored in MongoDB Atlas.</p></div><div className="yt-comment-profile-picture"><CommentAvatar name={user?.name || "You"} image={profileImage === undefined ? user?.image : profileImage} /><label><ImagePlus aria-hidden="true" />Choose picture<input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => void choosePicture(event.target.files?.[0])} className="sr-only" /></label><button type="button" onClick={() => setProfileImage(null)}>Remove picture</button></div><div className="yt-comment-profile-fields"><label>Location<input value={profileLocation} onChange={(event) => setProfileLocation(event.target.value)} maxLength={80} placeholder="e.g. Pune, India" /></label><label>Translate comments to<select value={profileLanguage} onChange={(event) => setProfileLanguage(event.target.value)}>{Object.entries(languageNames).map(([code, name]) => <option key={code} value={code}>{name}</option>)}</select></label></div>{profileError && <p role="alert" className="yt-comment-error">{profileError}</p>}<div className="yt-comment-profile-actions"><button type="button" className="yt-comment-cancel" disabled={profileBusy} onClick={() => setProfileOpen(false)}>Cancel</button><button type="button" className="yt-primary-button" disabled={profileBusy} onClick={() => void saveProfile()}>{profileBusy ? "Saving…" : "Save profile"}</button></div></div>}
     <div className="yt-comments-composer"><CommentAvatar name={user?.name || "You"} image={user?.image} /><div><MentionEditor id="new-comment" value={rootText} onChange={setRootText} placeholder="Add a comment" />{challengeField(null)}<div className="yt-comment-editor-footer"><span>{commentLength(rootText)} / {maxCommentLength} · Type @ to mention</span><div>{rootText && <button type="button" className="yt-comment-cancel" disabled={busy} onClick={() => setRootText("")}>Cancel</button>}<button type="button" className="yt-primary-button" disabled={busy || !commentLength(rootText) || commentLength(rootText) > maxCommentLength} onClick={() => void postComment(null)}><Send aria-hidden="true" />{busy ? "Posting…" : "Comment"}</button></div></div></div></div>
     {error && <p role="alert" className="yt-comment-error">{error}</p>}
     {loading ? <p className="yt-comment-loading">Loading comments…</p> : comments.length === 0 && !error ? <p className="yt-comment-empty">No comments yet. Start the conversation.</p> : <div className="yt-comment-list">{(children.get(null) || []).map(renderComment)}</div>}

@@ -60,6 +60,13 @@ export function publicSubscription(record, userId, now = new Date()) {
     } : null,
     accessEndsAt: active ? (change?.expiresAt || record.expiresAt) : null,
     cancelAtPeriodEnd: active ? record.cancelAtPeriodEnd : false,
-    autoRenew: false,
+    autoRenew: active && record.provider === "razorpay" && Boolean(record.autoRenew) && !record.cancelAtPeriodEnd,
+    nextRenewalAt: active && record.provider === "razorpay" && record.autoRenew && !record.cancelAtPeriodEnd ? (record.nextRenewalAt || record.expiresAt) : null,
+    paymentProvider: active ? (record.provider || "local") : null,
+    pendingProviderChange: active && record.pendingProviderChange?.planId ? {
+      planId: record.pendingProviderChange.planId,
+      billingCycle: record.pendingProviderChange.billingCycle,
+      startsAt: record.pendingProviderChange.startsAt || null,
+    } : null,
   };
 }

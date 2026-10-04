@@ -13,7 +13,7 @@ export default function VideoThumbnail({ video }: { video: VideoRecord }) {
         </div>
       )}
       {duration && <span className="yt-thumb-duration">{duration}</span>}
-      {!video.canWatch && !video.mediaUnavailable && <span className="yt-thumb-badge">Members only</span>}
+      {!video.mediaUnavailable && (video.isCourse || video.earlyAccessActive || !video.canWatch) && <span className="yt-thumb-badge">{video.isCourse ? "Gold course" : video.earlyAccessActive ? "Gold early access" : "Members only"}</span>}
     </div>
   );
 }

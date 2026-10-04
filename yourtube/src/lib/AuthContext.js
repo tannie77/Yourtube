@@ -13,7 +13,7 @@ function automaticTheme() {
 }
 
 function validTheme(value) {
-  return ["automatic", "light", "dark"].includes(value) ? value : "automatic";
+  return ["automatic", "light", "dark"].includes(value) ? value : "light";
 }
 
 function applyTheme(preference) {
@@ -28,8 +28,8 @@ function applyTheme(preference) {
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [themePreference, setThemePreferenceState] = useState("automatic");
-  const [resolvedTheme, setResolvedTheme] = useState(automaticTheme);
+  const [themePreference, setThemePreferenceState] = useState("light");
+  const [resolvedTheme, setResolvedTheme] = useState("light");
 
   const syncTheme = useCallback((preference) => {
     const safePreference = validTheme(preference);
@@ -44,7 +44,7 @@ export const UserProvider = ({ children }) => {
     let active = true;
     const themeTimer = window.setTimeout(() => {
       if (!active) return;
-      try { syncTheme(validTheme(window.localStorage.getItem(THEME_KEY))); } catch { syncTheme("automatic"); }
+      try { syncTheme(validTheme(window.localStorage.getItem(THEME_KEY))); } catch { syncTheme("light"); }
     }, 0);
     axiosInstance.get("/user/me")
       .then((response) => {
