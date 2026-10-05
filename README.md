@@ -1,7 +1,7 @@
 <h1 align="center">▶ YourTube 2.0</h1>
 
 <p align="center">
-  A YouTube-inspired video app with VidCircle's creator, community, membership, and security features.
+  A YouTube-inspired video app with creator, community, membership, and security features.
 </p>
 
 <p align="center">
@@ -14,9 +14,8 @@
 <p align="center">
   <a href="#quick-start">Quick start</a> ·
   <a href="#features">Features</a> ·
-  <a href="#local-demo">Local demo</a> ·
-  <a href="#project-status">Project status</a> ·
-  <a href="outputs/01a0e3e8-d9b4-7433-af76-646a3e6c8cf2/YourTube_2.0_Requirements_Tracker.xlsx">Requirements tracker</a>
+  <a href="#optional-atlas-demo-data">Local demo</a> ·
+  <a href="#project-status">Project status</a>
 </p>
 
 > [!NOTE]
@@ -146,8 +145,6 @@ The model installer downloads English pairs for Hindi, Spanish, French, and Urdu
 | --- | --- |
 | [`yourtube/`](yourtube/) | Next.js Pages Router frontend |
 | [`server/`](server/) | Express API, MongoDB models, media processing, and room signalling |
-| [`DEMO_REVIEW.md`](DEMO_REVIEW.md) | VidCircle feature parity and browser demo journeys |
-| [`YourTube 2.0 requirements tracker`](outputs/01a0e3e8-d9b4-7433-af76-646a3e6c8cf2/YourTube_2.0_Requirements_Tracker.xlsx) | Feature status and review notes |
 
 ## Checks
 
@@ -160,7 +157,7 @@ npm --prefix yourtube run build
 
 ## Project status
 
-The server integration tests and frontend production build should be run after configuration changes. See [`DEMO_REVIEW.md`](DEMO_REVIEW.md) and the [requirements tracker](outputs/01a0e3e8-d9b4-7433-af76-646a3e6c8cf2/YourTube_2.0_Requirements_Tracker.xlsx) for the feature-by-feature review.
+Run the server integration tests and frontend production build after configuration changes. Browser and device checks remain important for media playback, downloads, and video calls.
 
 - MongoDB Atlas needs a valid database user, URI and IP Access List entry. Razorpay Test plans are pending provider approval; external SMTP, GeoIP City data, and a TURN relay each need their own configuration. Calls outside a local network are not guaranteed without a relay.
 - The offline library stores copies in the current browser profile. Clearing browser site data removes them. The app still needs a network connection to load and check membership after a fresh browser launch; offline playback works while an authenticated app session remains open.
@@ -169,4 +166,4 @@ The server integration tests and frontend production build should be run after c
 
 ---
 
-Built from [BitHeadmr's YourTube clone](https://github.com/BitHeadmr/you_tube2.0) with VidCircle features migrated into its interface.
+Built from [BitHeadmr's YourTube clone](https://github.com/BitHeadmr/you_tube2.0) and extended with creator, community, membership, and security features.
