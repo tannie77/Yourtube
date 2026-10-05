@@ -437,7 +437,7 @@ export default function MembershipPage() {
                   );
                 })}
               </div>
-              <p className="mt-4 text-xs leading-5 text-[#8790a0] dark:text-[#aab5c8]">{catalogue.pricingNote} Gold course and priority access, browser offline saving, and plan limits are enforced. Ad-free applies to the in-app ad placeholder; no external ad network is connected.</p>
+              <p className="mt-4 text-xs leading-5 text-[#8790a0] dark:text-[#aab5c8]">{catalogue.pricingNote} Gold courses, priority streaming under load, browser offline saving, and plan limits are enforced. Silver and Gold do not see first-party campaigns. Sponsor campaigns can be added by an administrator.</p>
             </section>
 
             {subscription.status === "active" && (
