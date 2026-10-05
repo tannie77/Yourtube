@@ -165,7 +165,6 @@ test("an interrupted test checkout resumes without activating twice", async () =
   assert.equal(verified.status, 200);
   const firstExpiry = (await api("/me", { cookie })).data.expiresAt;
 
-  // Emulate a process interruption after the subscription write but before the order was finalized.
   await CheckoutOrder.updateOne({ _id: id }, { $set: { status: "processing", processingAt: new Date(Date.now() - 60_000) } });
   const resumed = await api(`/orders/${id}/verify`, { cookie, method: "POST", body: issued.data.result });
   assert.equal(resumed.status, 200);

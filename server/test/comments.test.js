@@ -22,8 +22,12 @@ let database;
 let httpServer;
 let baseUrl;
 let serial = 0;
+const originalTurnstileSiteKey = process.env.TURNSTILE_SITE_KEY;
+const originalTurnstileSecretKey = process.env.TURNSTILE_SECRET_KEY;
 
 before(async () => {
+  process.env.TURNSTILE_SITE_KEY = "";
+  process.env.TURNSTILE_SECRET_KEY = "";
   database = await MongoMemoryServer.create({ instance: { ip: "127.0.0.1" }, binary: { downloadDir: path.join(serverDirectory, ".local-data", "binaries") } });
   await mongoose.connect(database.getUri("yourtube2_comments_test"));
   await Promise.all([CommentAttempt.init(), CommentFingerprint.init(), CommentReaction.init(), CommentReport.init(), CommentTranslation.init()]);
@@ -32,6 +36,10 @@ before(async () => {
 });
 
 after(async () => {
+  if (originalTurnstileSiteKey === undefined) delete process.env.TURNSTILE_SITE_KEY;
+  else process.env.TURNSTILE_SITE_KEY = originalTurnstileSiteKey;
+  if (originalTurnstileSecretKey === undefined) delete process.env.TURNSTILE_SECRET_KEY;
+  else process.env.TURNSTILE_SECRET_KEY = originalTurnstileSecretKey;
   if (httpServer) await new Promise((resolve) => httpServer.close(resolve));
   await mongoose.disconnect();
   if (database) await database.stop();

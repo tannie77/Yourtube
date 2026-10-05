@@ -1,4 +1,3 @@
-// The room secret arrives from the URL fragment, which is never sent to the API.
 self.addEventListener("rtctransform", (event) => {
   const { direction, key: rawKey, media } = event.transformer.options;
   const clearBytes = media === "video" ? 10 : 0;
@@ -28,7 +27,7 @@ self.addEventListener("rtctransform", (event) => {
           frame.data = output.buffer;
         }
         controller.enqueue(frame);
-      } catch { /* A wrong room key or malformed frame must never be played. */ }
+      } catch {}
     },
   });
   event.transformer.readable.pipeThrough(transform).pipeTo(event.transformer.writable).catch(() => {});

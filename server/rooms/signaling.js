@@ -75,7 +75,7 @@ export function attachRoomSignaling(httpServer, allowedOrigins) {
       try {
         const identity = await authenticatedUser({ headers: socket.request.headers });
         if (identity && String(identity.user._id) === socket.data.userId) return true;
-      } catch { /* Treat an unavailable session as expired. */ }
+      } catch {}
       socket.emit("room:auth-expired");
       socket.disconnect(true);
       return false;

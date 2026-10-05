@@ -17,12 +17,6 @@ import { useUser } from "@/lib/AuthContext";
 
 const Channeldialogue = ({ isopen, onclose, channeldata, mode }: any) => {
   const { user, login } = useUser();
-  // const user: any = {
-  //   id: "1",
-  //   name: "John Doe",
-  //   email: "john@example.com",
-  //   image: "https://github.com/shadcn.png?height=32&width=32",
-  // };
   const router = useRouter();
   const [formData, setFormData] = useState({
     name: "",
@@ -78,7 +72,6 @@ const Channeldialogue = ({ isopen, onclose, channeldata, mode }: any) => {
         </DialogHeader>
 
         <form onSubmit={handlesubmit} className="space-y-6">
-          {/* Channel Name */}
           <div className="space-y-2">
             <Label htmlFor="name">Channel Name</Label>
             <Input
@@ -90,7 +83,6 @@ const Channeldialogue = ({ isopen, onclose, channeldata, mode }: any) => {
               maxLength={80}
             />
           </div>
-          {/* Channel Description */}
           <div className="space-y-2">
             <Label htmlFor="description">Channel Description</Label>
             <Textarea

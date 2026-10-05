@@ -65,7 +65,7 @@ export function useRoomLobby(roomId: string) {
   const refreshDevices = useCallback(async () => {
     if (!navigator.mediaDevices?.enumerateDevices) return;
     try { setDevices(await navigator.mediaDevices.enumerateDevices()); }
-    catch { /* Device labels can be hidden until permission is granted. */ }
+    catch {}
   }, []);
 
   const sendPresence = useCallback((changes: Record<string, boolean | string>) => {
@@ -627,7 +627,7 @@ export function useRoomLobby(roomId: string) {
         setNotice(next ? "Network is slow. Camera quality was reduced automatically." : "Network recovered. Camera quality was restored.");
         poorSamples = 0;
         healthySamples = 0;
-      } catch { /* Stats and camera constraints vary by browser; manual mode remains available. */ }
+      } catch {}
       finally { checking = false; }
     }, 5000);
     return () => window.clearInterval(timer);

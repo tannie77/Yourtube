@@ -34,15 +34,13 @@
 
 ## Quick start
 
-You need **Node.js 22**, npm, and a MongoDB Atlas cluster. Install `ffmpeg` and `ffprobe` if you want to upload videos. In Atlas, create a database user with read/write access to the database and add this computer's public IP to the project's [IP Access List](https://www.mongodb.com/docs/atlas/security/ip-access-list/). Copy the [Drivers connection string](https://www.mongodb.com/docs/atlas/connect-to-database-deployment/) and put it in the ignored `server/.env` as `MONGODB_URI`. Replace the username and password placeholders, percent-encoding special characters in the password. Set `MONGODB_DB_NAME` to the database you want this app to use (default `yourtube2`). Do not commit the URI.
+You need **Node.js 22**, npm, and a MongoDB Atlas cluster. Install `ffmpeg` and `ffprobe` if you want to upload videos. In Atlas, create a database user with read/write access to the database and add this computer's public IP to the project's [IP Access List](https://www.mongodb.com/docs/atlas/security/ip-access-list/). Create `server/.env`, copy the [Drivers connection string](https://www.mongodb.com/docs/atlas/connect-to-database-deployment/) into it as `MONGODB_URI`, and replace the username and password placeholders, percent-encoding special characters in the password. Set `MONGODB_DB_NAME` to the database you want this app to use (default `yourtube2`). Do not commit the URI.
 
 ```sh
 git clone --branch yourtube2.0 https://github.com/tannie77/Yourtube.git yourtube-2.0
 cd yourtube-2.0
 npm --prefix server ci
 npm --prefix yourtube ci
-cp server/.env.example server/.env
-# Edit server/.env and set MONGODB_URI to your Atlas driver URI.
 npm --prefix server run db:check
 ```
 
@@ -55,7 +53,7 @@ Start these commands in **two separate terminals**, from the repository root:
 
 Open **[http://127.0.0.1:3000](http://127.0.0.1:3000)**. The sign-in page offers **Continue with local preview** in development, which creates a local demo account. Use `127.0.0.1` for both the app and API so session cookies behave consistently.
 
-The server configuration template is [`server/.env.example`](server/.env.example). Startup fails clearly if the Atlas URI is absent or a local MongoDB URL is supplied. The frontend uses `http://127.0.0.1:5000` by default; set `NEXT_PUBLIC_BACKEND_URL` if your API runs elsewhere. Atlas starts with its own data; existing local MongoDB accounts and records are **not automatically migrated**. Uploaded MP4s, captions and previews remain in `server/uploads/` on this computer, so moving the API to another machine also requires moving those files or adding shared media storage.
+The API reads the ignored `server/.env` file. Create it manually after cloning the repository. Startup fails clearly if the Atlas URI is absent or a local MongoDB URL is supplied. The frontend uses `http://127.0.0.1:5000` by default; set `NEXT_PUBLIC_BACKEND_URL` if your API runs elsewhere. Atlas starts with its own data; existing local MongoDB accounts and records are **not automatically migrated**. Uploaded MP4s, captions and previews remain in `server/uploads/` on this computer, so moving the API to another machine also requires moving those files or adding shared media storage.
 
 If Node reports refused Atlas SRV lookups even though the hostname resolves in Windows, set `MONGODB_DNS_SERVERS` in `server/.env` to DNS resolver IPs such as `1.1.1.1,8.8.8.8` and retry `db:check`.
 

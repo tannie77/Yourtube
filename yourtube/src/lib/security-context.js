@@ -34,6 +34,5 @@ export function saveLocalTestLocation(testCity, testState) {
   try {
     window.localStorage.setItem(LOCATION_KEY, JSON.stringify({ testCity: testCity.trim(), testState: testState.trim() }));
   } catch {
-    // The sign-in still works when local storage is unavailable.
   }
 }

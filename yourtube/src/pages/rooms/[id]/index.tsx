@@ -68,7 +68,7 @@ function VideoTile({ name, label, stream, muted = false, cameraOn = false, micOn
     const element = video.current;
     if (!element) return;
     element.srcObject = stream || null;
-    if (stream) void element.play().catch(() => { /* Browser autoplay can require interaction. */ });
+    if (stream) void element.play().catch(() => {});
     return () => { element.srcObject = null; };
   }, [stream]);
   return <div className={styles.videoTile} data-speaking={speaking}>

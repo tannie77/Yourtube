@@ -28,7 +28,7 @@ async function downloadError(error: unknown) {
     try {
       const details = data instanceof Blob ? JSON.parse(await data.text()) : data;
       if (typeof details?.message === "string") return details.message;
-    } catch { /* Keep the local API fallback below. */ }
+    } catch {}
   }
   return "Could not download this video. Check the local API and try again.";
 }
@@ -81,7 +81,7 @@ export default function DownloadPanel({ video }: { video: VideoRecord }) {
       try {
         const response = await axiosInstance.get<DownloadUsage>("/video/downloads/usage/me");
         setUsage(response.data);
-      } catch { /* The server still enforces the quota. */ }
+      } catch {}
       setBusy(false);
     }
   }

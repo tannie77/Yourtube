@@ -36,7 +36,7 @@ export const UserProvider = ({ children }) => {
     setThemePreferenceState(safePreference);
     setResolvedTheme(applyTheme(safePreference));
     if (typeof window !== "undefined") {
-      try { window.localStorage.setItem(THEME_KEY, safePreference); } catch { /* Server persistence remains available. */ }
+      try { window.localStorage.setItem(THEME_KEY, safePreference); } catch {}
     }
   }, []);
 

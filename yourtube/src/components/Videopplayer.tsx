@@ -232,11 +232,11 @@ export default function VideoPlayer({ video, nextVideo, onLoaded, theatreMode = 
         const channel = new BroadcastChannel(playbackChannelName);
         channel.onmessage = (event: MessageEvent<PlaybackClaim>) => handleClaim(event.data);
         playbackChannel.current = channel;
-      } catch { /* Storage events provide the local fallback. */ }
+      } catch {}
     }
     const onStorage = (event: StorageEvent) => {
       if (event.key !== playbackChannelName || !event.newValue) return;
-      try { handleClaim(JSON.parse(event.newValue) as PlaybackClaim); } catch { /* Ignore an invalid local notification. */ }
+      try { handleClaim(JSON.parse(event.newValue) as PlaybackClaim); } catch {}
     };
     window.addEventListener("storage", onStorage);
     return () => {
@@ -249,7 +249,7 @@ export default function VideoPlayer({ video, nextVideo, onLoaded, theatreMode = 
     const claim: PlaybackClaim = { type: "playing", instanceId: instanceId.current, startedAt: Date.now() };
     activeClaim.current = claim;
     playbackChannel.current?.postMessage(claim);
-    try { window.localStorage.setItem(playbackChannelName, JSON.stringify(claim)); } catch { /* BroadcastChannel still works when storage is unavailable. */ }
+    try { window.localStorage.setItem(playbackChannelName, JSON.stringify(claim)); } catch {}
   }, []);
   useEffect(() => {
     const syncFullscreen = () => setFullscreen(document.fullscreenElement === shellRef.current);

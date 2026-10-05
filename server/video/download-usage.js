@@ -27,7 +27,6 @@ async function settlePeriod(Model, key, completed) {
   );
 }
 
-// A unique user/video row admits only one active transfer or one recent success.
 export async function acquireDownloadWindow(userId, videoId, recordId, now = new Date()) {
   const key = { userId, videoId };
   const reset = { recordId, state: "active", startedAt: now, blockedUntil: null };
@@ -104,14 +103,12 @@ export async function finishDownload(reservation, completed) {
   return { matchedCount: Math.min(daily.matchedCount, monthly.matchedCount) };
 }
 
-// Run before app.listen, when no download transfers are active in this API process.
 export async function recoverDownloads(now = new Date()) {
   const failed = await DownloadRecord.updateMany(
     { status: "reserved" },
     { $set: { status: "failed", failureReason: "server_restart", finishedAt: now } },
   );
 
-  // Completed records are durable; both period counters can be rebuilt after a crash.
   await DailyDownloadUsage.updateMany({}, { $set: { completedCount: 0, reservedCount: 0 } });
   await MonthlyDownloadUsage.updateMany({}, { $set: { completedCount: 0, reservedCount: 0 } });
   const counts = await DownloadRecord.aggregate([
@@ -141,8 +138,6 @@ export async function recoverDownloads(now = new Date()) {
     );
   }
 
-  // Failed or record-less attempts lose their lock. Recent completed transfers
-  // regain the remainder of their 30-minute window, including pre-5C records.
   await DownloadWindow.deleteMany({ state: "active" });
   const cutoff = new Date(now.getTime() - DUPLICATE_DOWNLOAD_WINDOW_MS);
   const recent = await DownloadRecord.find({ status: "completed", finishedAt: { $gt: cutoff } })

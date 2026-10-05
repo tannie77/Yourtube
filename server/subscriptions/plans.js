@@ -4,7 +4,6 @@ export const billingCycles = [
   { id: "yearly", label: "Yearly", validityDays: 365 },
 ];
 
-// Sample INR prices in paise for the local prototype; no money is collected yet.
 export const plans = [
   {
     id: "free",
