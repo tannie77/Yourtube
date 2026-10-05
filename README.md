@@ -53,9 +53,15 @@ Start these commands in **two separate terminals**, from the repository root:
 
 Open **[http://127.0.0.1:3000](http://127.0.0.1:3000)**. The sign-in page offers **Continue with local preview** in development, which creates a local demo account. Use `127.0.0.1` for both the app and API so session cookies behave consistently.
 
-The API reads the ignored `server/.env` file. Create it manually after cloning the repository. Startup fails clearly if the Atlas URI is absent or a local MongoDB URL is supplied. The frontend uses `http://127.0.0.1:5000` by default; set `NEXT_PUBLIC_BACKEND_URL` if your API runs elsewhere. Atlas starts with its own data; existing local MongoDB accounts and records are **not automatically migrated**. Uploaded MP4s, captions and previews remain in `server/uploads/` on this computer, so moving the API to another machine also requires moving those files or adding shared media storage.
+The API reads the ignored `server/.env` file. Create it manually after cloning the repository. Startup fails clearly if the Atlas URI is absent or a local MongoDB URL is supplied. The frontend uses `http://127.0.0.1:5000` by default; set `NEXT_PUBLIC_BACKEND_URL` if your API runs elsewhere. Atlas starts with its own data; existing local MongoDB accounts and records are **not automatically migrated**. Local uploads remain in `server/uploads/`; the Render configuration stores uploaded media in Atlas GridFS instead.
 
 If Node reports refused Atlas SRV lookups even though the hostname resolves in Windows, set `MONGODB_DNS_SERVERS` in `server/.env` to DNS resolver IPs such as `1.1.1.1,8.8.8.8` and retry `db:check`.
+
+### Render free deployment
+
+[`render.yaml`](render.yaml) defines one free Node web service for the Next.js app, API, and video-room WebSockets. Render prompts for `MONGODB_URI` when creating the Blueprint; enter the same Atlas driver URI used locally. The service sets `MEDIA_STORAGE=gridfs`, so uploaded video, captions, renditions, and previews are stored in Atlas rather than Render's temporary filesystem. Copy existing local media to Atlas before deploying with `npm --prefix server run media:migrate -- --apply`; the command keeps the local originals and can be rerun safely. The Atlas database must have enough free capacity for new videos and generated renditions.
+
+In this free deployment, paid checkout is unavailable, the local payment simulator is rejected by the API, and existing test memberships do not grant paid access. Email delivery stays paused, so registration works but sign-in from a new browser or device cannot complete its email-code check. Existing trusted browsers continue to work. Render free services sleep after inactivity and take time to wake up. After creating the service, add its Render outbound IP ranges to the Atlas Network Access list, then verify `/health`, registration, video playback, and a room call on the deployed URL.
 
 ### Copy existing local data to Atlas
 

@@ -13,6 +13,7 @@ const planEnvName = (planId, cycle) => `RAZORPAY_PLAN_${planId.toUpperCase()}_${
 const providerId = (value, prefix) => typeof value === "string" && new RegExp(`^${prefix}_[A-Za-z0-9]+$`).test(value);
 
 export function razorpayConfigured() {
+  if (process.env.NODE_ENV === "production") return false;
   const configuredIds = paidPlanIds.flatMap((planId) => billingCycles.map((cycle) => process.env[planEnvName(planId, cycle.id)]));
   return /^rzp_test_[A-Za-z0-9]+$/.test(process.env.RAZORPAY_TEST_KEY_ID || "") &&
     Boolean(process.env.RAZORPAY_TEST_KEY_SECRET) && Boolean(process.env.RAZORPAY_WEBHOOK_SECRET) &&

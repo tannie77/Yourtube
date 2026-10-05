@@ -8,6 +8,7 @@ export function termLength(cycleId) {
 }
 
 export function isActive(record, now = new Date()) {
+  if (process.env.PAID_ACCESS_DISABLED === "true") return false;
   return Boolean(record && record.expiresAt > now);
 }
 
@@ -21,6 +22,7 @@ export function orderIntent(record, planId, now = new Date()) {
 
 export async function readSubscription(userId, now = new Date()) {
   const record = await Subscription.findOne({ userId });
+  if (process.env.PAID_ACCESS_DISABLED === "true") return record;
   const change = record?.scheduledChange;
   if (!change?.orderId || change.startsAt > now) return record;
 
@@ -47,7 +49,7 @@ export function publicSubscription(record, userId, now = new Date()) {
   return {
     userId: userId.toString(),
     effectivePlanId: active ? record.planId : "free",
-    status: active ? "active" : record ? "expired" : "free",
+    status: active ? "active" : process.env.PAID_ACCESS_DISABLED === "true" ? "free" : record ? "expired" : "free",
     billingCycle: active ? record.billingCycle : null,
     startedAt: active ? record.startedAt : null,
     expiresAt: active ? record.expiresAt : null,

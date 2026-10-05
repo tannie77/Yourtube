@@ -25,7 +25,7 @@ export interface VideoRecord {
   savedForLater?: boolean;
 }
 
-const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:5000").replace(/\/$/, "");
+const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === "production" ? "" : "http://127.0.0.1:5000")).replace(/\/$/, "");
 
 export function videoMediaUrl(id: string, quality?: VideoQuality) {
   return `${backendUrl}/video/${encodeURIComponent(id)}/media${quality ? `?quality=${encodeURIComponent(quality)}` : ""}`;

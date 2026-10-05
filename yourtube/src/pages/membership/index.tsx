@@ -340,7 +340,7 @@ export default function MembershipPage() {
                 A plan for every <span className="text-[#ffb39f]">way to watch.</span>
               </h1>
               <p className="workspace-hero-copy max-w-[510px]">
-                Compare memberships, then use {catalogue?.razorpayTestConfigured ? "Razorpay Test checkout or the local simulation" : "the local simulation"}. No real money is charged.
+                {catalogue?.checkoutAvailable ? `Compare memberships, then use ${catalogue.razorpayTestConfigured ? "Razorpay Test checkout or the local simulation" : "the local simulation"}. No real money is charged.` : "Compare memberships. Paid checkout is currently unavailable."}
               </p>
               <div className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-xs font-medium text-[#d9deea]">
                 <span className="inline-flex items-center gap-2"><ShieldCheck className="size-4 text-[#ffad97]" aria-hidden="true" /> No real payments</span>
@@ -425,6 +425,8 @@ export default function MembershipPage() {
                       </ul>
                       {plan.id === "free" ? (
                         <div className="mt-8 flex h-11 items-center justify-center rounded-xl border border-[#dce8e1] dark:border-[#49685a] bg-[#f4faf6] dark:bg-[#273d3a] text-sm font-semibold text-[#418064] dark:text-[#91d7ae]">{isCurrent ? "Your current plan" : "Available after expiry"}</div>
+                      ) : !catalogue.checkoutAvailable ? (
+                        <div className="mt-8 flex h-11 items-center justify-center rounded-xl border border-dashed border-[#d8dde5] dark:border-[#3b465f] text-sm font-semibold text-[#7e899b] dark:text-[#aab5c8]">Currently unavailable</div>
                       ) : subscription.scheduledChange || subscription.pendingProviderChange ? (
                         <div className="mt-8 flex h-11 items-center justify-center rounded-xl border border-dashed border-[#d8dde5] dark:border-[#3b465f] bg-[#f8f9fb] dark:bg-[#263149] text-sm font-semibold text-[#7e899b] dark:text-[#aab5c8]">Change already scheduled</div>
                       ) : (
@@ -460,7 +462,7 @@ export default function MembershipPage() {
               </section>
             )}
 
-            <section id="local-checkout" className="mt-8 grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]" aria-labelledby="checkout-heading">
+            {catalogue.checkoutAvailable && <section id="local-checkout" className="mt-8 grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]" aria-labelledby="checkout-heading">
               <div className="workspace-surface workspace-card">
                 <div className="flex items-start gap-4">
                   <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[#fff0ec] dark:bg-[#43313a] text-[#de6b54] dark:text-[#ff9b87]"><CreditCard className="size-5" aria-hidden="true" /></span>
@@ -592,7 +594,7 @@ export default function MembershipPage() {
                 )}
                 {receiptError && <p role="alert" className="mt-3 text-xs text-[#b45b49] dark:text-[#ff9b87]">{receiptError}</p>}
               </div>
-            </section>
+            </section>}
 
             <section className="mt-8" aria-labelledby="features-heading">
               <div className="flex flex-wrap items-end justify-between gap-3">
@@ -617,13 +619,13 @@ export default function MembershipPage() {
               </div>
             </section>
 
-            <section className="mt-8 grid gap-4 workspace-surface workspace-card sm:grid-cols-[auto_1fr] sm:items-start">
+            {catalogue.checkoutAvailable && <section className="mt-8 grid gap-4 workspace-surface workspace-card sm:grid-cols-[auto_1fr] sm:items-start">
               <div className="flex size-11 items-center justify-center rounded-2xl bg-[#f3f0ff] dark:bg-[#35314b] text-[#7966ac] dark:text-[#c9baff]"><ShieldCheck className="size-5" aria-hidden="true" /></div>
               <div>
                 <h2 className="text-base font-semibold">Simple local membership rules</h2>
                 <p className="mt-1.5 max-w-[920px] text-sm leading-6 text-[#737e90] dark:text-[#aab5c8]">Local simulation terms renew manually. Razorpay Test subscriptions renew automatically after a verified charge, until cancelled or the provider term ends. Plan changes take effect when Razorpay confirms the charge. Cancellation keeps paid access through the current term.</p>
               </div>
-            </section>
+            </section>}
           </>
         )}
       </div>
