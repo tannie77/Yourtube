@@ -37,7 +37,7 @@
 You need **Node.js 22**, npm, and a MongoDB Atlas cluster. Install `ffmpeg` and `ffprobe` if you want to upload videos. In Atlas, create a database user with read/write access to the database and add this computer's public IP to the project's [IP Access List](https://www.mongodb.com/docs/atlas/security/ip-access-list/). Copy the [Drivers connection string](https://www.mongodb.com/docs/atlas/connect-to-database-deployment/) and put it in the ignored `server/.env` as `MONGODB_URI`. Replace the username and password placeholders, percent-encoding special characters in the password. Set `MONGODB_DB_NAME` to the database you want this app to use (default `yourtube2`). Do not commit the URI.
 
 ```sh
-git clone --branch codex/yourtube-2.0-migration-20261002 https://github.com/tannie77/Yourtube.git yourtube-2.0
+git clone --branch yourtube2.0 https://github.com/tannie77/Yourtube.git yourtube-2.0
 cd yourtube-2.0
 npm --prefix server ci
 npm --prefix yourtube ci
