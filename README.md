@@ -68,6 +68,18 @@ For city-level login history on Render, upload the local `GEOIP_CITY_DB_PATH` fi
 
 If Node reports refused Atlas SRV lookups even though the hostname resolves in Windows, set `MONGODB_DNS_SERVERS` in `server/.env` to DNS resolver IPs such as `1.1.1.1,8.8.8.8` and retry `db:check`.
 
+### Vercel frontend with the Render API
+
+Import this same GitHub repository into Vercel on branch `yourtube2.0`. Set the project Root Directory to `yourtube` and use the Next.js framework preset. The Vercel project needs only these environment variables:
+
+| Variable | Value |
+| --- | --- |
+| `BACKEND_URL` | The existing Render service URL, such as `https://yourtube-r4ld.onrender.com` |
+| `NEXT_PUBLIC_BACKEND_URL` | `/api` |
+| `NEXT_PUBLIC_ROOM_SIGNALING_PATH` | `/realtime` |
+
+The frontend forwards `/api/*` and `/realtime/*` to Render. API requests remain on the Vercel origin in the browser, so the existing HTTP-only session cookie works without third-party cookies. Room signaling uses HTTP polling through the proxy; video and audio use WebRTC with the configured TURN service. Keep Atlas, SMTP, TURN, and payment secrets on Render only. Once Vercel assigns the public URL, add that exact HTTPS origin to Render's comma-separated `FRONTEND_ORIGIN` alongside the Render URL, then redeploy Render. Keep the Render backend running while the Vercel frontend is public.
+
 ### Copy existing local data to Atlas
 
 The migration tool copies every `yourtube2` collection, preserving document IDs and indexes. It refuses an Atlas destination that already contains records and never deletes the local database. Keep the old local MongoDB process running for the copy, but stop the old API first so records do not change mid-copy. With `MONGODB_URI` and `MONGODB_DB_NAME` set in `server/.env`, run:

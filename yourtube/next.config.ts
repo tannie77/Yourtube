@@ -1,9 +1,16 @@
 import type { NextConfig } from "next";
 
+const backendUrl = process.env.BACKEND_URL?.replace(/\/+$/, "");
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  env: {
-    BACKEND_URL: process.env.BACKEND_URL,
+  async rewrites() {
+    if (!backendUrl) return [];
+    return [
+      { source: "/api/:path*", destination: `${backendUrl}/:path*` },
+      { source: "/realtime", destination: `${backendUrl}/socket.io/` },
+      { source: "/realtime/:path*", destination: `${backendUrl}/socket.io/:path*` },
+    ];
   },
 };
 

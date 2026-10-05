@@ -272,8 +272,13 @@ export function useRoomLobby(roomId: string) {
       }
     }
 
-    const apiUrl = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === "production" ? window.location.origin : "http://127.0.0.1:5000");
-    const socket = io(apiUrl, { withCredentials: true, autoConnect: false });
+    const signalingUrl = process.env.NEXT_PUBLIC_ROOM_SIGNALING_URL || (process.env.NODE_ENV === "production" ? window.location.origin : "http://127.0.0.1:5000");
+    const socket = io(signalingUrl, {
+      path: process.env.NEXT_PUBLIC_ROOM_SIGNALING_PATH || "/socket.io",
+      withCredentials: true,
+      autoConnect: false,
+      upgrade: process.env.NEXT_PUBLIC_ROOM_SIGNALING_PATH !== "/realtime",
+    });
     socketRef.current = socket;
 
     socket.on("connect", () => {
