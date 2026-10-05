@@ -20,6 +20,7 @@ export const plans = [
       earlyAccess: false,
       exclusiveCourses: false,
       adFree: false,
+      priorityStreaming: false,
     },
   },
   {
@@ -37,6 +38,7 @@ export const plans = [
       earlyAccess: false,
       exclusiveCourses: false,
       adFree: false,
+      priorityStreaming: false,
     },
   },
   {
@@ -54,6 +56,7 @@ export const plans = [
       earlyAccess: false,
       exclusiveCourses: false,
       adFree: true,
+      priorityStreaming: true,
     },
   },
   {
@@ -71,6 +74,7 @@ export const plans = [
       earlyAccess: true,
       exclusiveCourses: true,
       adFree: true,
+      priorityStreaming: true,
     },
   },
 ];

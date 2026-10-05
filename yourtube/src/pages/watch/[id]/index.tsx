@@ -11,6 +11,7 @@ import VideoInfo from "@/components/VideoInfo";
 import VideoPlayer from "@/components/Videopplayer";
 import DownloadPanel from "@/components/DownloadPanel";
 import Comments from "@/components/Comments";
+import AdSlot from "@/components/AdSlot";
 
 type WatchUsage = { planId: string; limitMinutes: number | null; secondsReserved: number; remainingSeconds: number | null; dayKey: string };
 
@@ -71,7 +72,7 @@ export default function WatchPage() {
             </div>
           )}
           <VideoInfo video={video} />
-          {video.canWatch && video.showLocalAd && <aside className="yt-downloads-surface yt-downloads-card mt-6" aria-label="Local demo advertisement"><p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--yt-red)]">Local demo ad</p><p className="mt-1 text-sm text-[var(--yt-muted)]">Silver and Gold hide this local placeholder. No external ad network is connected.</p></aside>}
+          {video.canWatch && video.showLocalAd && <AdSlot key={video._id} videoId={video._id} />}
           {(usage || usageError) && <aside className="yt-downloads-surface yt-downloads-card mt-6 flex items-start gap-3" aria-label="Today's watch allowance"><Clock3 className="mt-0.5 size-4 shrink-0 text-[var(--yt-red)]" aria-hidden="true" /><div><h2 className="text-sm font-semibold text-[var(--yt-text)]">Today&apos;s watch allowance</h2>{usage ? <><p className="mt-1 text-sm text-[var(--yt-muted)]">{usage.remainingSeconds === null ? "Unlimited on Gold" : `${Math.floor(usage.remainingSeconds / 60)} of ${usage.limitMinutes} minutes remaining`} · resets at midnight IST</p><p className="mt-1 text-xs text-[var(--yt-muted)]">A video&apos;s full duration counts once when you first play it each day. This is an approximate local meter.</p></> : <p className="mt-1 text-sm text-[var(--yt-muted)]">Allowance unavailable. Refresh the page to try again.</p>}</div></aside>}
           {video.canWatch && !video.mediaUnavailable && <DownloadPanel key={`download-${video._id}`} video={video} />}
           {video.canWatch && !video.mediaUnavailable && <Comments key={`comments-${video._id}`} videoId={video._id} />}

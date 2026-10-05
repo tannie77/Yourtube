@@ -19,17 +19,18 @@
 </p>
 
 > [!NOTE]
-> This branch runs the API against MongoDB Atlas. Razorpay Test subscriptions need provider approval and plan IDs. External email, city-level login locations, and reliable calls across restrictive networks need optional services. The ad is a demo placeholder.
+> This branch runs the API against MongoDB Atlas. Razorpay Test subscriptions still need provider approval and plan IDs. Brevo email, GeoIP City, and TURN can run on the existing free Render service. First-party campaigns replace the demo ad placeholder.
 
 ## Features
 
 | Area | What is included |
 | --- | --- |
 | **Accounts & security** | Registration, password sign-in, session cookies, Mailpit or external SMTP one-time codes, trusted browsers, session controls, optional GeoIP city lookup, and owner-checked channel edits. |
-| **Videos & player** | Signed-in feed and search, MP4 uploads, optional WebVTT captions, private previews, quality variants, protected streaming, watch progress, and playback controls. |
-| **Membership & downloads** | Free-to-Gold plans, local and credential-ready Razorpay Test checkout, recurring billing webhooks, test invoices and receipts, daily and monthly download limits, trusted-browser restriction, and a browser offline library for paid plans. |
+| **Videos & player** | Signed-in feed and search, MP4 uploads, optional WebVTT captions, private previews, quality variants, protected streaming, watch progress, playback controls, and priority stream slots for Silver and Gold under load. |
+| **Membership & downloads** | Free-to-Gold plans, local and credential-ready Razorpay Test checkout, recurring billing webhooks, test invoices and receipts, daily and monthly download limits, trusted-browser restriction, and a browser offline library for paid plans with an offline app shell. |
 | **Community** | Likes, Watch later, threaded comments, mentions, reactions, English/Hindi/Spanish/French/Urdu translation, spam checks, optional Turnstile verification, reports, and admin moderation. |
 | **Video rooms** | Private rooms for up to four people, live chat and small files, host controls, optional camera and mic, screen sharing, local recording, adaptive camera quality, and invitation-key media encryption in supported browsers. |
+| **Ads** | Admin-managed first-party and sponsor text campaigns, a default YourTube promotion, plan-aware placement, and daily unique impression/click counts. |
 | **Interface** | Responsive YouTube-style pages with consistent spacing and light, dark, or automatic appearance. |
 
 ## Quick start
@@ -63,6 +64,8 @@ Copy existing media into Atlas once, from a machine that still has `server/uploa
 
 Render Free blocks outbound SMTP ports 25, 465, and 587. Brevo supports port **2525** as a free SMTP alternative: set `SMTP_HOST=smtp-relay.brevo.com`, `SMTP_PORT=2525`, `SMTP_SECURE=false`, your Brevo `SMTP_USER` and `SMTP_PASSWORD`, and a verified `SMTP_FROM`. The connection still upgrades with STARTTLS. Alternatively, use a separate **Brevo API key** with `BREVO_API_KEY` and `SMTP_FROM` for HTTPS email delivery; the SMTP key cannot be used as the API key. To pause delivery explicitly, set `EMAIL_DELIVERY_DISABLED=true`; new-device sign-in will then be unavailable. Razorpay Test still needs plan IDs and provider approval. Local simulated checkout is disabled on the public service.
 
+For city-level login history on Render, upload the local `GEOIP_CITY_DB_PATH` file privately to Atlas with `npm --prefix server run geoip:upload`, then set `GEOIP_ATLAS_ENABLED=true` on Render. Startup downloads the compressed database to Render's temporary filesystem. Refresh the GeoLite2 City source and rerun the upload periodically. Do not commit the `.mmdb` file. Render sets `CF-Connecting-IP`, which the app uses for the public client IP on its web service; on other trusted proxies, configure exact peer addresses with `TRUSTED_PROXY_IPS`.
+
 If Node reports refused Atlas SRV lookups even though the hostname resolves in Windows, set `MONGODB_DNS_SERVERS` in `server/.env` to DNS resolver IPs such as `1.1.1.1,8.8.8.8` and retry `db:check`.
 
 ### Copy existing local data to Atlas
@@ -84,13 +87,13 @@ To enable Razorpay Test checkout, fill in `RAZORPAY_TEST_KEY_ID`, `RAZORPAY_TEST
 
 Receipts and sign-in codes use Mailpit by default. Receipts include a printable HTML test invoice attachment. For external delivery, set `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, and `SMTP_FROM` in `server/.env`; external SMTP requires TLS. On Render Free, use Brevo SMTP port 2525 or `BREVO_API_KEY` plus `SMTP_FROM`. Set `SUPPORT_EMAIL` and the `INVOICE_SELLER_*` fields for invoice details. All payments here are tests, so the printable invoice remains clearly marked as a **test document**, not a legally valid tax invoice.
 
-Email delivery is currently paused with `EMAIL_DELIVERY_DISABLED=true` in the ignored `server/.env`. This blocks both OTP and receipt messages before any SMTP connection. Existing trusted sessions still work, but signing in from a new browser or device cannot complete until delivery is explicitly resumed. Set the value to `false` and restart the API only when you want email delivery again.
+Set `EMAIL_DELIVERY_DISABLED=false` to send sign-in codes and receipts. Keep the Brevo sender verified and check delivery in a new-browser sign-in; SMTP acceptance alone does not prove inbox placement.
 
 Rooms created from the app generate a secret in the invitation URL fragment. Share the complete link. The API stores only a digest of the secret; the browser uses it to encrypt encoded audio and video frames. Browsers without WebRTC encoded transforms cannot join encrypted rooms. Legacy rooms still use WebRTC transport encryption. Chat, small files, and local recordings are outside the media encryption layer.
 
 Calls use `stun:stun.cloudflare.com:3478` by default. Set `ROOM_TURN_URLS`, `ROOM_TURN_USERNAME`, and `ROOM_TURN_CREDENTIAL` in `server/.env` for a TURN relay when calls must work across restrictive networks. Multiple STUN or TURN URLs are comma separated. The call page reduces camera resolution automatically when WebRTC reports sustained poor outbound quality. Test microphone, camera, switching, screen sharing, and reconnection with the actual browsers and networks you will use.
 
-The security page records browser, OS, device, IP, and login attempts. For automatic city, state, country, and approximate coordinates, obtain a GeoLite2 City/GeoIP2 City `.mmdb` file and set its absolute path as `GEOIP_CITY_DB_PATH` in `server/.env`. Local and private IP addresses do not have a public GeoIP location. If the API runs behind a reverse proxy, list only its exact IP address in `TRUSTED_PROXY_IPS` so forwarded IP headers cannot be supplied directly by clients. Without a city database, the location fields remain empty while login and OTP checks continue to work.
+The security page records browser, OS, device, IP, and login attempts. For local city, state, country, and approximate coordinates, set `GEOIP_CITY_DB_PATH` to a GeoLite2 City/GeoIP2 City `.mmdb` file. Local and private IP addresses have no public GeoIP location. Render uses `CF-Connecting-IP`; for another reverse proxy, list only its exact peer IP in `TRUSTED_PROXY_IPS` so clients cannot supply forwarded addresses directly.
 
 For real CAPTCHA after repeated comment posts, configure both `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` in `server/.env`. The backend verifies tokens with Turnstile before accepting the post. Without both keys, the local arithmetic challenge remains active. The comment filter also blocks links, repeated symbols and emoji, abusive terms, excessive mentions, and near-identical repeat posts.
 
@@ -165,9 +168,10 @@ npm --prefix yourtube run build
 
 Run the server integration tests and frontend production build after configuration changes. Browser and device checks remain important for media playback, downloads, and video calls.
 
-- MongoDB Atlas needs a valid database user, URI and IP Access List entry. Razorpay Test plans are pending provider approval; external SMTP, GeoIP City data, and a TURN relay each need their own configuration. Calls outside a local network are not guaranteed without a relay.
-- The offline library stores copies in the current browser profile. Clearing browser site data removes them. The app still needs a network connection to load and check membership after a fresh browser launch; offline playback works while an authenticated app session remains open.
-- Public channel profiles, a real ad network, live payments, and migration of old clone database records are not included in this branch.
+- Razorpay Test plans remain pending provider approval. Real room media still needs testing between browsers on separate networks, despite TURN configuration and signalling tests.
+- The offline library stores copies in the current browser profile and the app shell caches the Downloads page. Open the site online once before going offline. Clearing browser site data removes the videos. Offline expiry uses the saved membership end date; it cannot immediately detect a server-side cancellation until reconnection.
+- The ad system can run YourTube promotions now; paid sponsor creative and inventory must be added by an administrator. Streaming priority only helps when this server has competing streams and cannot guarantee a specific network speed.
+- Public channel profiles and live payments are not included in this branch.
 - Keep `.env` files, generated dependencies, uploads, and `server/.local-data/` out of Git. Review dependency advisories before any production deployment.
 
 ---

@@ -6,6 +6,7 @@ import axiosInstance from "./axiosinstance";
 
 const UserContext = createContext();
 const THEME_KEY = "yourtube2_theme_preference";
+const OFFLINE_USER_KEY = "yourtube2_offline_user_id";
 
 function automaticTheme() {
   const hour = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", hour: "2-digit", hourCycle: "h23" }).format(new Date()));
@@ -28,6 +29,7 @@ function applyTheme(preference) {
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [offlineUserId, setOfflineUserId] = useState("");
   const [themePreference, setThemePreferenceState] = useState("light");
   const [resolvedTheme, setResolvedTheme] = useState("light");
 
@@ -50,9 +52,16 @@ export const UserProvider = ({ children }) => {
       .then((response) => {
         if (!active) return;
         setUser(response.data.user);
+        window.localStorage.setItem(OFFLINE_USER_KEY, response.data.user._id);
+        setOfflineUserId(response.data.user._id);
         syncTheme(response.data.user.themePreference);
       })
-      .catch(() => { if (active) setUser(null); })
+      .catch((error) => {
+        if (!active) return;
+        setUser(null);
+        if (error.response?.status === 401) { window.localStorage.removeItem(OFFLINE_USER_KEY); setOfflineUserId(""); }
+        else setOfflineUserId(window.localStorage.getItem(OFFLINE_USER_KEY) || "");
+      })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; window.clearTimeout(themeTimer); };
   }, [syncTheme]);
@@ -67,6 +76,8 @@ export const UserProvider = ({ children }) => {
     const response = await axiosInstance.post("/user/login", { email, password, ...securityContext });
     if (response.data.user) {
       setUser(response.data.user);
+      window.localStorage.setItem(OFFLINE_USER_KEY, response.data.user._id);
+      setOfflineUserId(response.data.user._id);
       syncTheme(response.data.user.themePreference);
     }
     return response.data;
@@ -75,6 +86,8 @@ export const UserProvider = ({ children }) => {
   const verifyOtp = async (challengeToken, code) => {
     const response = await axiosInstance.post("/user/login/otp", { challengeToken, code });
     setUser(response.data.user);
+    window.localStorage.setItem(OFFLINE_USER_KEY, response.data.user._id);
+    setOfflineUserId(response.data.user._id);
     syncTheme(response.data.user.themePreference);
     return response.data;
   };
@@ -82,6 +95,8 @@ export const UserProvider = ({ children }) => {
   const register = async (name, email, password, securityContext = {}) => {
     const response = await axiosInstance.post("/user/register", { name, email, password, ...securityContext });
     setUser(response.data.user);
+    window.localStorage.setItem(OFFLINE_USER_KEY, response.data.user._id);
+    setOfflineUserId(response.data.user._id);
     syncTheme(response.data.user.themePreference);
     return response.data;
   };
@@ -89,9 +104,14 @@ export const UserProvider = ({ children }) => {
   const logout = async () => {
     await axiosInstance.post("/user/logout");
     setUser(null);
+    window.localStorage.removeItem(OFFLINE_USER_KEY);
+    setOfflineUserId("");
   };
 
-  const login = (updatedUser) => setUser(updatedUser);
+  const login = (updatedUser) => {
+    setUser(updatedUser);
+    if (updatedUser?._id) { window.localStorage.setItem(OFFLINE_USER_KEY, updatedUser._id); setOfflineUserId(updatedUser._id); }
+  };
 
   const updateThemePreference = async (preference) => {
     const response = await axiosInstance.patch("/user/preferences/theme", { themePreference: preference });
@@ -110,7 +130,7 @@ export const UserProvider = ({ children }) => {
   };
 
   return (
-    <UserContext.Provider value={{ user, loading, login, logout, signIn, verifyOtp, register, themePreference, resolvedTheme, changeTheme, updateThemePreference }}>
+    <UserContext.Provider value={{ user, loading, offlineUserId, login, logout, signIn, verifyOtp, register, themePreference, resolvedTheme, changeTheme, updateThemePreference }}>
       {children}
     </UserContext.Provider>
   );

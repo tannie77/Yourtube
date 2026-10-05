@@ -69,8 +69,9 @@ const comparisonRows: { label: string; value: (plan: Plan) => string }[] = [
   { label: "Premium videos", value: (plan) => plan.features.premiumAccess },
   { label: "Early access", value: (plan) => plan.features.earlyAccess ? "Included" : "—" },
   { label: "Exclusive courses", value: (plan) => plan.features.exclusiveCourses ? "Included" : "—" },
+  { label: "Streaming priority under load", value: (plan) => plan.features.priorityStreaming ? "Included" : "—" },
   { label: "Browser offline library", value: (plan) => plan.id === "free" ? "—" : "Included" },
-  { label: "Ad-free local demo", value: (plan) => plan.features.adFree ? "Included" : "—" },
+  { label: "Ad-free viewing", value: (plan) => plan.features.adFree ? "Included" : "—" },
 ];
 
 function PlanIcon({ id }: { id: Plan["id"] }) {

@@ -35,6 +35,7 @@ export default function Sidebar({ onNavigate }: { onNavigate: () => void }) {
           <NavItem href="/rooms" label="Video rooms" icon={Video} active={router.pathname === "/rooms" || router.pathname === "/rooms/[id]"} onNavigate={onNavigate} />
           <NavItem href="/security" label="Security" icon={ShieldCheck} active={router.pathname === "/security"} onNavigate={onNavigate} />
           {user?.role === "admin" && <NavItem href="/moderation" label="Moderation" icon={Flag} active={router.pathname === "/moderation"} onNavigate={onNavigate} />}
+          {user?.role === "admin" && <NavItem href="/ad-campaigns" label="Ad campaigns" icon={Flag} active={router.pathname === "/ad-campaigns"} onNavigate={onNavigate} />}
         </div>}
       </nav>
     </aside>

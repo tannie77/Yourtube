@@ -11,17 +11,22 @@ import "@/styles/youtube-ui.css";
 
 function AppPage({ Component, pageProps }: AppProps) {
   const router = useRouter();
-  const { user, loading } = useUser();
+  const { user, loading, offlineUserId } = useUser();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isSignInPage = router.pathname === "/sign-in";
   const isPublicPage = ["/", "/explore", "/subscriptions", "/search"].includes(router.pathname);
+  const offlineDownloads = router.pathname === "/downloads" && Boolean(offlineUserId);
 
   useEffect(() => {
-    if (router.isReady && !isSignInPage && !isPublicPage && !loading && !user) {
+    if ("serviceWorker" in navigator) void navigator.serviceWorker.register("/offline-worker.js").catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (router.isReady && !isSignInPage && !isPublicPage && !offlineDownloads && !loading && !user) {
       void router.replace("/sign-in");
     }
-  }, [isSignInPage, isPublicPage, loading, router, user]);
+  }, [isSignInPage, isPublicPage, offlineDownloads, loading, router, user]);
 
   useEffect(() => { setMobileMenuOpen(false); }, [router.asPath]);
 
@@ -31,7 +36,7 @@ function AppPage({ Component, pageProps }: AppProps) {
   };
 
   if (isSignInPage) return <Component {...pageProps} />;
-  if (!isPublicPage && (loading || !user)) {
+  if (!isPublicPage && (loading || (!user && !offlineDownloads))) {
     return <main className="yt-app flex min-h-screen items-center justify-center text-sm yt-subtle">Opening YourTube…</main>;
   }
 

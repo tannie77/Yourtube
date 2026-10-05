@@ -14,6 +14,7 @@ import { assetStem, generateAssets, removeGeneratedAssets } from "../video/asset
 import { probeVideo } from "../video/metadata.js";
 import { reserveWatch, usageSnapshot } from "../video/usage.js";
 import { mediaInfo, removeAtlasAssets, storeAtlasAsset, streamAtlasAsset, usesAtlasMedia } from "../video/media-store.js";
+import { streamScheduler } from "../video/stream-priority.js";
 
 export function publicVideo(record, user, subscription) {
   const value = typeof record.toObject === "function" ? record.toObject() : record;
@@ -30,6 +31,7 @@ export function publicVideo(record, user, subscription) {
     earlyAccessActive: isEarlyAccess(value),
     isCourse: Boolean(value.isCourse),
     showLocalAd: showLocalAd(subscription),
+    priorityStreaming: findPlan(isActive(subscription) ? subscription.planId : "free").features.priorityStreaming,
     maxPlaybackSpeed: findPlan(isActive(subscription) ? subscription.planId : "free").features.maxPlaybackSpeed,
   };
 }
@@ -246,19 +248,30 @@ export const streamvideo = async (req, res, next) => {
       { $set: { viewedon: new Date() } },
       { upsert: true },
     );
+    const priority = Boolean(findPlan(isActive(subscription) ? subscription.planId : "free")?.features.priorityStreaming);
+    const closing = new AbortController();
+    res.once("close", () => closing.abort());
+    const release = await streamScheduler.acquire(priority, closing.signal);
+    if (res.destroyed) { release(); return; }
+    res.once("close", release);
     res.set("Cache-Control", "private, no-store");
     res.set("X-Content-Type-Options", "nosniff");
+    res.set("X-Stream-Priority", priority ? "priority" : "standard");
     res.type("video/mp4");
     if (usesAtlasMedia()) {
-      const sent = await streamAtlasAsset(req, res, path.basename(filePath), { allowRange: true });
-      return sent ? undefined : res.status(404).json({ message: "Video file unavailable." });
+      try {
+        const sent = await streamAtlasAsset(req, res, path.basename(filePath), { allowRange: true });
+        return sent ? undefined : res.status(404).json({ message: "Video file unavailable." });
+      } finally { release(); }
     }
     return res.sendFile(path.basename(filePath), { root: uploadDirectory, dotfiles: "deny", acceptRanges: true }, (error) => {
+      release();
       if (!error) return;
       if (res.headersSent) return next(error);
       return res.status(404).json({ message: "Video file unavailable." });
     });
   } catch (error) {
+    if (res.destroyed) return;
     return next(error);
   }
 };

@@ -18,6 +18,7 @@ export interface VideoRecord {
   earlyAccessActive?: boolean;
   isCourse?: boolean;
   showLocalAd?: boolean;
+  priorityStreaming?: boolean;
   maxPlaybackSpeed?: number;
   hasCaptions?: boolean;
   mediaUnavailable?: boolean;

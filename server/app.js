@@ -9,6 +9,7 @@ import watchLaterRoutes from "./routes/watchlater.js";
 import commentRoutes from "./routes/comment.js";
 import roomRoutes from "./routes/rooms.js";
 import channelRoutes from "./routes/channels.js";
+import adRoutes from "./routes/ads.js";
 import { razorpayWebhook } from "./subscriptions/razorpay.js";
 
 const app = express();
@@ -31,6 +32,7 @@ app.use("/watch-later", watchLaterRoutes);
 app.use("/comment", commentRoutes);
 app.use("/rooms", roomRoutes);
 app.use("/channels", channelRoutes);
+app.use("/ads", adRoutes);
 
 export { allowedOrigins };
 export default app;

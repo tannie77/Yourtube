@@ -93,7 +93,9 @@ function DownloadCard({ entry }: { entry: DownloadEntry }) {
 }
 
 export default function DownloadsPage() {
-  const { user } = useUser();
+  const { user, offlineUserId } = useUser();
+  const libraryUserId = user?._id || offlineUserId;
+  const offlineMode = !user && Boolean(offlineUserId);
   const [entries, setEntries] = useState<DownloadEntry[]>([]);
   const [offlineItems, setOfflineItems] = useState<OfflineVideo[]>([]);
   const [offlineUrl, setOfflineUrl] = useState("");
@@ -105,15 +107,15 @@ export default function DownloadsPage() {
   const [revision, setRevision] = useState(0);
 
   useEffect(() => {
-    if (!user?._id) { setOfflineItems([]); return; }
-    void listOfflineVideos(user._id).then(setOfflineItems).catch(() => setOfflineItems([]));
-    void axiosInstance.get<SubscriptionSnapshot>("/subscriptions/me").then(({ data }) => setMembership(data)).catch(() => setMembership(null));
-  }, [user?._id, revision]);
+    if (!libraryUserId) { setOfflineItems([]); return; }
+    void listOfflineVideos(libraryUserId).then(setOfflineItems).catch(() => setOfflineItems([]));
+    if (user) void axiosInstance.get<SubscriptionSnapshot>("/subscriptions/me").then(({ data }) => setMembership(data)).catch(() => setMembership(null));
+  }, [libraryUserId, user?._id, revision]);
 
   useEffect(() => () => { if (offlineUrl) URL.revokeObjectURL(offlineUrl); }, [offlineUrl]);
 
   function playOffline(item: OfflineVideo) {
-    if (membership?.status !== "active" || membership.effectivePlanId === "free" || Date.now() >= new Date(item.accessEndsAt).getTime()) return;
+    if ((!offlineMode && (membership?.status !== "active" || membership.effectivePlanId === "free")) || Date.now() >= new Date(item.accessEndsAt).getTime()) return;
     setOfflineUrl(URL.createObjectURL(item.blob));
     setPlayingKey(item.key);
   }
@@ -158,13 +160,14 @@ export default function DownloadsPage() {
               <p className="yt-downloads-hero-copy max-w-[510px]">Keep track of your MP4 downloads. Saved files stay in your browser’s download folder.</p>
               {!loading && !error && <span className="mt-7 inline-flex rounded-xl border border-white/15 bg-white/10 px-3.5 py-2.5 text-xs font-semibold text-[#e5e7f0]">{entries.length} {entries.length === 1 ? "download record" : "download records"}</span>}
               {usage && <p className="mt-3 text-xs text-[#e5e7f0]">{usage.dailyRemaining} of {usage.limit} downloads remaining today · {usage.monthlyRemaining} of {usage.monthlyLimit} this month · {usage.planId} plan · resets on IST boundaries</p>}
+              {offlineMode && <p className="mt-3 text-xs text-[#e5e7f0]">Offline mode: saved videos can play until their recorded membership expiry. Connect again to refresh access and history.</p>}
             </div>
           </div>
         </section>
 
         <section className="pt-8" aria-labelledby="download-history-heading" aria-live="polite">
           <div className="mb-8"><h2 className="text-2xl font-semibold tracking-[-0.05em]">Offline library</h2><p className="mt-1 text-sm yt-subtle">Paid members can save videos in this browser. Copies stay on this device until you remove them; playback follows your membership term.</p>
-            {offlineItems.length === 0 ? <p className="mt-4 text-sm yt-subtle">No videos saved in this browser yet.</p> : <div className="mt-4 space-y-3">{offlineItems.map((item) => <div key={item.key} className="yt-downloads-surface yt-downloads-card flex flex-wrap items-center gap-3"><span className="min-w-0 flex-1"><strong className="block truncate">{item.title}</strong><small className="yt-subtle">{item.quality} · saved {dateLabel(item.savedAt)}</small></span><button type="button" className="yt-pill-button" onClick={() => playOffline(item)} disabled={membership?.status !== "active" || membership.effectivePlanId === "free" || Date.now() >= new Date(item.accessEndsAt).getTime()}>Play offline</button><button type="button" className="yt-pill-button" onClick={() => void removeOffline(item)}>Remove</button></div>)}</div>}
+            {offlineItems.length === 0 ? <p className="mt-4 text-sm yt-subtle">No videos saved in this browser yet.</p> : <div className="mt-4 space-y-3">{offlineItems.map((item) => <div key={item.key} className="yt-downloads-surface yt-downloads-card flex flex-wrap items-center gap-3"><span className="min-w-0 flex-1"><strong className="block truncate">{item.title}</strong><small className="yt-subtle">{item.quality} · saved {dateLabel(item.savedAt)}</small></span><button type="button" className="yt-pill-button" onClick={() => playOffline(item)} disabled={(!offlineMode && (membership?.status !== "active" || membership.effectivePlanId === "free")) || Date.now() >= new Date(item.accessEndsAt).getTime()}>Play offline</button><button type="button" className="yt-pill-button" onClick={() => void removeOffline(item)}>Remove</button></div>)}</div>}
             {offlineUrl && <video key={playingKey} controls playsInline src={offlineUrl} className="mt-4 w-full max-w-[760px] rounded-xl bg-black" />}
           </div>
           <div className="flex flex-wrap items-end justify-between gap-4">

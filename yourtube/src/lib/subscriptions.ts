@@ -15,6 +15,7 @@ export type Plan = {
     earlyAccess: boolean;
     exclusiveCourses: boolean;
     adFree: boolean;
+    priorityStreaming: boolean;
   };
 };
 

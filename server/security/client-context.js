@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { isIP } from "node:net";
 import { approximateGeoLocation } from "./geoip.js";
 
 const MAX_LOCATION_LENGTH = 80;
@@ -66,8 +67,9 @@ export function clientContext(request, input = {}) {
   const { os, deviceType, deviceModel } = parseDevice(userAgent);
   const peerIp = normaliseIp(request.socket?.remoteAddress || request.ip || "");
   const trustedProxies = (process.env.TRUSTED_PROXY_IPS || "").split(",").map((value) => normaliseIp(value)).filter(Boolean);
+  const renderIp = process.env.RENDER_EXTERNAL_URL ? normaliseIp(request.get("cf-connecting-ip") || "") : "";
   const forwarded = trustedProxies.includes(peerIp) ? String(request.get("x-forwarded-for") || "").split(",").at(-1)?.trim() : "";
-  const ip = normaliseIp(forwarded || peerIp);
+  const ip = isIP(renderIp) ? renderIp : normaliseIp(forwarded || peerIp);
   const testCity = cleanText(input.testCity);
   const testState = cleanText(input.testState);
   const deviceHash = digest(validDeviceId || `fallback:${userAgent || "unknown-client"}`);

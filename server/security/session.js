@@ -51,6 +51,10 @@ export async function createSession(response, user, { context = {}, trustedDevic
     deviceModel: context.deviceModel || "",
     testCity: context.testCity || "",
     testState: context.testState || "",
+    city: context.city || "",
+    state: context.state || "",
+    country: context.country || "",
+    approximateLocation: context.approximateLocation || "",
     expiresAt,
   });
   response.cookie(COOKIE_NAME, token, {
