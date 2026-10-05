@@ -4,7 +4,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import multer from "multer";
 
-export const uploadDirectory = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "uploads");
+export const uploadDirectory = process.env.UPLOAD_DIRECTORY?.trim()
+  ? path.resolve(process.env.UPLOAD_DIRECTORY.trim())
+  : path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "uploads");
 export const maxVideoBytes = 100 * 1024 * 1024;
 export const maxCaptionBytes = 1024 * 1024;
 mkdirSync(uploadDirectory, { recursive: true });

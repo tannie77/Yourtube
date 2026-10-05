@@ -55,6 +55,8 @@ Open **[http://127.0.0.1:3000](http://127.0.0.1:3000)**. The sign-in page offers
 
 The API reads the ignored `server/.env` file. Create it manually after cloning the repository. Startup fails clearly if the Atlas URI is absent or a local MongoDB URL is supplied. The frontend uses `http://127.0.0.1:5000` by default; set `NEXT_PUBLIC_BACKEND_URL` if your API runs elsewhere. Atlas starts with its own data; existing local MongoDB accounts and records are **not automatically migrated**. Uploaded MP4s, captions and previews remain in `server/uploads/` on this computer, so moving the API to another machine also requires moving those files or adding shared media storage.
 
+For a Render API service, select branch `yourtube2.0`, root directory `server`, build command `npm ci`, and start command `npm start`. Set `NODE_VERSION=22`, `MONGODB_URI`, `MONGODB_DB_NAME=yourtube2`, and `COOKIE_SECURE=true` in the service environment. Allowlist the service's outbound IP ranges in Atlas Network Access. To preserve uploaded media across deploys, attach a persistent disk at `/var/data/uploads` and set `UPLOAD_DIRECTORY=/var/data/uploads`; copy the existing files from `server/uploads/` to that disk. Render's free compute plan cannot attach a disk. Set `FRONTEND_ORIGIN` to the deployed frontend URL when it is available.
+
 If Node reports refused Atlas SRV lookups even though the hostname resolves in Windows, set `MONGODB_DNS_SERVERS` in `server/.env` to DNS resolver IPs such as `1.1.1.1,8.8.8.8` and retry `db:check`.
 
 ### Copy existing local data to Atlas
