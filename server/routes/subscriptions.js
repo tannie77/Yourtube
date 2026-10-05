@@ -7,29 +7,23 @@ import { isActive, publicSubscription, readSubscription } from "../subscriptions
 import { abandonRazorpay, cancelRazorpay, changeRazorpayPlan, confirmRazorpay, razorpayConfigured, startRazorpay } from "../subscriptions/razorpay.js";
 
 const routes = express.Router();
-const localCheckoutAvailable = () => process.env.NODE_ENV !== "production";
-const requireLocalCheckout = (_request, response, next) => {
-  if (!localCheckoutAvailable()) return response.status(503).json({ message: "Membership checkout is unavailable." });
-  next();
-};
 
 routes.get("/plans", (_request, response) => {
   return response.json({
     plans,
     billingCycles,
     currency: "INR",
-    pricingNote: localCheckoutAvailable() ? (razorpayConfigured() ? "Razorpay Test mode is available. Test payments do not move real money." : "Illustrative local test prices. Configure Razorpay Test credentials to enable provider checkout.") : "Paid memberships are unavailable. Displayed prices are illustrative.",
-    checkoutAvailable: localCheckoutAvailable(),
+    pricingNote: razorpayConfigured() ? "Razorpay Test mode is available. Test payments do not move real money." : "Illustrative local test prices. Configure Razorpay Test credentials to enable provider checkout.",
     razorpayTestConfigured: razorpayConfigured(),
     razorpayKeyId: razorpayConfigured() ? process.env.RAZORPAY_TEST_KEY_ID : null,
   });
 });
 
 routes.get("/orders", requireAuth, listOrders);
-routes.post("/orders", requireLocalCheckout, requireAuth, createOrder);
+routes.post("/orders", requireAuth, createOrder);
 routes.get("/orders/:id", requireAuth, getOrder);
-routes.post("/orders/:id/simulate", requireLocalCheckout, requireAuth, simulateResult);
-routes.post("/orders/:id/verify", requireLocalCheckout, requireAuth, verifyResult);
+routes.post("/orders/:id/simulate", requireAuth, simulateResult);
+routes.post("/orders/:id/verify", requireAuth, verifyResult);
 routes.get("/orders/:id/receipt", requireAuth, getReceipt);
 routes.get("/orders/:id/invoice", requireAuth, getInvoice);
 routes.post("/orders/:id/receipt/send", requireAuth, retryReceipt);

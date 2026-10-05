@@ -23,7 +23,6 @@ export type PlanCatalogue = {
   billingCycles: { id: BillingCycleId; label: string; validityDays: number }[];
   currency: "INR";
   pricingNote: string;
-  checkoutAvailable: boolean;
   razorpayTestConfigured: boolean;
   razorpayKeyId: string | null;
 };

@@ -6,7 +6,6 @@
   "scripts": {
     "db:check": "node scripts/check-atlas.js",
     "db:migrate": "node scripts/migrate-local-to-atlas.js",
-    "media:migrate": "node scripts/migrate-media-to-atlas.js",
     "razorpay:plans": "node scripts/setup-razorpay-test-plans.js",
     "demo:seed": "node scripts/seed-demo.js",
     "video:seed": "node scripts/seed-requested-video.js",

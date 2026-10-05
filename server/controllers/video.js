@@ -13,7 +13,6 @@ import { availableQualities, canWatchVideo, isEarlyAccess, requiredVideoPlan, sh
 import { assetStem, generateAssets, removeGeneratedAssets } from "../video/assets.js";
 import { probeVideo } from "../video/metadata.js";
 import { reserveWatch, usageSnapshot } from "../video/usage.js";
-import { mediaInfo, removeAtlasAssets, storeAtlasAsset, streamAtlasAsset, usesAtlasMedia } from "../video/media-store.js";
 
 export function publicVideo(record, user, subscription) {
   const value = typeof record.toObject === "function" ? record.toObject() : record;
@@ -40,10 +39,9 @@ export function storedPath(video) {
 }
 
 export async function withMetadata(video) {
+  if (video.sourceQuality && video.durationSeconds) return video;
   const filePath = storedPath(video);
   if (!filePath) return { ...video, mediaUnavailable: true };
-  if (usesAtlasMedia() && !(await mediaInfo(path.basename(filePath)))) return { ...video, mediaUnavailable: true };
-  if (video.sourceQuality && video.durationSeconds) return video;
   try {
     const metadata = await probeVideo(filePath);
     if (!metadata.sourceQuality) return { ...video, mediaUnavailable: true };
@@ -99,8 +97,6 @@ export const uploadvideo = async (req, res) => {
   }
 
   let saved;
-  const storedAssets = [];
-  let generatedAssets = [];
   try {
     if (captionFile) {
       if (captionFile.size > maxCaptionBytes) {
@@ -133,19 +129,6 @@ export const uploadvideo = async (req, res) => {
     }
 
     const assets = await generateAssets(videoFile.path, metadata);
-    generatedAssets = [
-      ...new Set([
-        ...assets.renditions.map((rendition) => rendition.filename),
-        ...Array.from({ length: assets.previewCount }, (_, index) => `${path.basename(videoFile.path, ".mp4")}-preview-${String(index + 1).padStart(2, "0")}.jpg`),
-        ...(captionFile ? [captionFile.filename] : []),
-      ]),
-    ];
-    if (usesAtlasMedia()) {
-      for (const filename of generatedAssets) {
-        const stored = await storeAtlasAsset(path.join(uploadDirectory, filename));
-        if (stored.created) storedAssets.push(filename);
-      }
-    }
     saved = await Video.create({
       videotitle: title,
       filename: videoFile.originalname,
@@ -162,13 +145,9 @@ export const uploadvideo = async (req, res) => {
       isCourse,
     });
     const subscription = await readSubscription(req.user._id);
-    if (usesAtlasMedia()) {
-      await Promise.all(generatedAssets.map((filename) => unlink(path.join(uploadDirectory, filename)).catch(() => {})));
-    }
     return res.status(201).json({ video: publicVideo(saved, req.user, subscription) });
   } catch (error) {
     if (saved) await Video.deleteOne({ _id: saved._id }).catch(() => {});
-    if (storedAssets.length) await removeAtlasAssets(storedAssets).catch(() => {});
     await removeGeneratedAssets(path.basename(videoFile.path, ".mp4"));
     await removeInputs();
     console.error("Video upload failed:", error);
@@ -235,7 +214,7 @@ export const streamvideo = async (req, res, next) => {
     }
     const filePath = selected.filename ? path.join(uploadDirectory, selected.filename) : storedPath(video);
     if (!filePath) return res.status(404).json({ message: "Video file unavailable." });
-    if (!(await mediaInfo(path.basename(filePath)))) return res.status(404).json({ message: "Video file unavailable." });
+    try { await stat(filePath); } catch { return res.status(404).json({ message: "Video file unavailable." }); }
     const reservation = await reserveWatch(req.user._id, video, subscription);
     if (!reservation.allowed) {
       res.set("Cache-Control", "private, no-store");
@@ -249,10 +228,6 @@ export const streamvideo = async (req, res, next) => {
     res.set("Cache-Control", "private, no-store");
     res.set("X-Content-Type-Options", "nosniff");
     res.type("video/mp4");
-    if (usesAtlasMedia()) {
-      const sent = await streamAtlasAsset(req, res, path.basename(filePath), { allowRange: true });
-      return sent ? undefined : res.status(404).json({ message: "Video file unavailable." });
-    }
     return res.sendFile(path.basename(filePath), { root: uploadDirectory, dotfiles: "deny", acceptRanges: true }, (error) => {
       if (!error) return;
       if (res.headersSent) return next(error);
@@ -269,10 +244,6 @@ export const getCaption = async (req, res, next) => {
     const video = await accessibleVideo(req, res);
     if (!video) return;
     if (!video.captionFilename || !/^[a-f0-9-]{36}\.vtt$/i.test(video.captionFilename)) return res.status(404).json({ message: "Captions unavailable." });
-    if (usesAtlasMedia()) {
-      res.type("text/vtt; charset=utf-8");
-      return await streamAtlasAsset(req, res, video.captionFilename) || res.status(404).json({ message: "Captions unavailable." });
-    }
     return res.type("text/vtt; charset=utf-8").sendFile(video.captionFilename, { root: uploadDirectory, dotfiles: "deny" }, next);
   } catch (error) { return next(error); }
 };
@@ -285,10 +256,6 @@ export const getPreview = async (req, res, next) => {
     const index = Number(req.params.index);
     if (!Number.isInteger(index) || index < 0 || index >= (video.previewCount || 0)) return res.status(404).json({ message: "Preview unavailable." });
     const filename = `${assetStem(video)}-preview-${String(index + 1).padStart(2, "0")}.jpg`;
-    if (usesAtlasMedia()) {
-      res.type("image/jpeg");
-      return await streamAtlasAsset(req, res, filename) || res.status(404).json({ message: "Preview unavailable." });
-    }
     return res.type("image/jpeg").sendFile(filename, { root: uploadDirectory, dotfiles: "deny" }, next);
   } catch (error) { return next(error); }
 };
