@@ -41,7 +41,7 @@ export function publicReceipt(order, user) {
     termExpiresAt: order.termExpiresAt || null,
     emailStatus: order.receiptStatus || "pending",
     emailSentAt: order.receiptSentAt || null,
-    deliveryMode: smtpSettings().mode === "local" ? "local inbox" : "configured SMTP",
+    deliveryMode: process.env.BREVO_API_KEY ? "Brevo API" : smtpSettings().mode === "local" ? "local inbox" : "configured SMTP",
     supportEmail: process.env.SUPPORT_EMAIL || "support@yourtube.local",
     provider: order.provider || "local",
     ...invoiceDetails(order),
@@ -97,6 +97,25 @@ export async function sendPlatformEmail(recipient, subject, body, invoice = null
     throw new Error("Invalid email address.");
   }
   if (typeof subject !== "string" || !subject || /[\r\n]/.test(subject)) throw new Error("Invalid email subject.");
+  if (process.env.BREVO_API_KEY) {
+    const sender = process.env.SMTP_FROM;
+    if (!sender || !/^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/.test(sender)) throw new Error("A verified SMTP_FROM address is required for Brevo API delivery.");
+    const payload = {
+      sender: { name: "YourTube", email: sender },
+      to: [{ email: recipient }],
+      subject,
+      textContent: body,
+      ...(invoice === null ? {} : { attachment: [{ name: "YourTube-test-invoice.html", content: Buffer.from(invoice, "utf8").toString("base64") }] }),
+    };
+    const result = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: { "api-key": process.env.BREVO_API_KEY, "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!result.ok) throw new Error(`Brevo rejected the message (${result.status}).`);
+    return;
+  }
   const config = smtpSettings(localFrom);
   if (!Number.isInteger(config.port) || config.port < 1 || config.port > 65535 || !config.from || !/^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/.test(config.from)) throw new Error("Invalid SMTP configuration.");
   if (config.mode !== "local" && (!config.user || !config.password)) throw new Error("SMTP credentials are incomplete.");

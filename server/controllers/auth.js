@@ -102,11 +102,11 @@ export async function login(request, response) {
           challengeToken: challenge.token,
           expiresAt: challenge.expiresAt,
           destination: namedUser.email.replace(/^(.{1,2}).*(@.*)$/, "$1•••$2"),
-          message: process.env.SMTP_HOST ? "Enter the code sent to your email address." : "Enter the code captured by the local Mailpit inbox.",
+          message: process.env.BREVO_API_KEY || process.env.SMTP_HOST ? "Enter the code sent to your email address." : "Enter the code captured by the local Mailpit inbox.",
         });
       } catch {
         await recordLoginAttempt({ userId: namedUser._id, email, eventType: "password", outcome: "otp_delivery_failed", successful: false, context });
-        return response.status(503).json({ message: process.env.SMTP_HOST ? "Could not deliver the sign-in code. Check the email configuration and try again." : "Could not deliver the local sign-in code. Start Mailpit and try again." });
+        return response.status(503).json({ message: process.env.BREVO_API_KEY || process.env.SMTP_HOST ? "Could not deliver the sign-in code. Check the email configuration and try again." : "Could not deliver the local sign-in code. Start Mailpit and try again." });
       }
     }
 

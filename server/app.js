@@ -12,7 +12,7 @@ import channelRoutes from "./routes/channels.js";
 import { razorpayWebhook } from "./subscriptions/razorpay.js";
 
 const app = express();
-const allowedOrigins = (process.env.FRONTEND_ORIGIN || "http://127.0.0.1:3000,http://localhost:3000")
+const allowedOrigins = (process.env.FRONTEND_ORIGIN || process.env.RENDER_EXTERNAL_URL || "http://127.0.0.1:3000,http://localhost:3000")
   .split(",")
   .map((origin) => origin.trim());
 
@@ -21,7 +21,8 @@ app.post("/subscriptions/razorpay/webhook", express.raw({ type: "application/jso
 app.use(express.json({ limit: "30mb" }));
 app.use(express.urlencoded({ limit: "30mb", extended: true }));
 
-app.get("/", (_request, response) => response.send("YourTube 2.0 local API is running"));
+app.get("/health", (_request, response) => response.json({ status: "ok" }));
+if (!process.env.RENDER_EXTERNAL_URL) app.get("/", (_request, response) => response.send("YourTube 2.0 local API is running"));
 app.use("/user", userRoutes);
 app.use("/video", videoRoutes);
 app.use("/subscriptions", subscriptionRoutes);

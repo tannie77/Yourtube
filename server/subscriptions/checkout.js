@@ -70,6 +70,7 @@ async function ownedOrder(request) {
 }
 
 export async function createOrder(request, response) {
+  if (process.env.NODE_ENV === "production") return response.status(503).json({ message: "Local test checkout is unavailable on the public site. Razorpay Test checkout will be available when configured." });
   const planId = request.body?.planId;
   const billingCycle = request.body?.billingCycle;
   const idempotencyKey = request.body?.idempotencyKey;
@@ -152,6 +153,7 @@ export async function getOrder(request, response) {
 }
 
 export async function simulateResult(request, response) {
+  if (process.env.NODE_ENV === "production") return response.status(503).json({ message: "Local test checkout is unavailable on the public site." });
   const outcome = request.body?.outcome;
   if (!Object.hasOwn(outcomeToStatus, outcome)) {
     return response.status(400).json({ message: "Choose success, failure or cancel for the local test." });
@@ -286,6 +288,7 @@ async function activateSubscription(order) {
 }
 
 export async function verifyResult(request, response) {
+  if (process.env.NODE_ENV === "production") return response.status(503).json({ message: "Local test checkout is unavailable on the public site." });
   try {
     const order = await ownedOrder(request);
     if (!order) return response.status(404).json({ message: "Order not found." });

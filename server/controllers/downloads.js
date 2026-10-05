@@ -1,4 +1,3 @@
-import { stat } from "node:fs/promises";
 import path from "node:path";
 import mongoose from "mongoose";
 import Video from "../Modals/video.js";
@@ -11,6 +10,7 @@ import { availableQualities, canWatchVideo, requiredVideoPlan } from "../subscri
 import { assetStem } from "../video/assets.js";
 import { acquireDownloadWindow, downloadUsageSnapshot, finishDownload, reserveDownload, settleDownloadWindow } from "../video/download-usage.js";
 import { storedPath, withMetadata } from "./video.js";
+import { mediaInfo, streamAtlasAsset, usesAtlasMedia } from "../video/media-store.js";
 
 function attachmentName(title, quality) {
   const clean = title.normalize("NFC").replace(/[^\p{L}\p{N} _-]/gu, "").trim().replace(/\s+/gu, "-").slice(0, 80) || "yourtube-video";
@@ -71,6 +71,10 @@ export async function getDownloadThumbnail(request, response, next) {
     if (!video?.previewCount) return response.status(404).json({ message: "Thumbnail unavailable." });
     const stem = assetStem(video);
     if (!/^[a-f0-9-]{36}$/i.test(stem)) return response.status(404).json({ message: "Thumbnail unavailable." });
+    if (usesAtlasMedia()) {
+      response.type("image/jpeg");
+      return await streamAtlasAsset(request, response, `${stem}-preview-01.jpg`) || response.status(404).json({ message: "Thumbnail unavailable." });
+    }
     return response.sendFile(`${stem}-preview-01.jpg`, {
       root: uploadDirectory, dotfiles: "deny", cacheControl: false, lastModified: false,
     });
@@ -119,9 +123,8 @@ export async function downloadVideo(request, response, next) {
     }
     const filePath = selected.filename ? path.join(uploadDirectory, selected.filename) : storedPath(video);
     if (!filePath) return response.status(404).json({ message: "Video file unavailable." });
-    let file;
-    try { file = await stat(filePath); } catch { return response.status(404).json({ message: "Video file unavailable." }); }
-    if (!file.isFile()) return response.status(404).json({ message: "Video file unavailable." });
+    const asset = await mediaInfo(path.basename(filePath));
+    if (!asset) return response.status(404).json({ message: "Video file unavailable." });
 
     const recordId = new mongoose.Types.ObjectId();
     const window = await acquireDownloadWindow(request.user._id, video._id, recordId, requestStartedAt);
@@ -147,7 +150,7 @@ export async function downloadVideo(request, response, next) {
       record = await DownloadRecord.create({
         _id: recordId,
         userId: request.user._id, videoId: video._id, videoTitle: video.videotitle, dayKey: reservation.dayKey,
-        planId: reservation.planId, quality: selected.quality, fileSize: file.size,
+        planId: reservation.planId, quality: selected.quality, fileSize: asset.length,
         ip: request.ip || "", userAgent, ...clientDetails(userAgent),
       });
     } catch (error) {
@@ -183,6 +186,11 @@ export async function downloadVideo(request, response, next) {
     try {
       response.set("X-Download-Quality", selected.quality);
       response.attachment(attachmentName(video.videotitle, selected.quality));
+      if (usesAtlasMedia()) {
+        const sent = await streamAtlasAsset(request, response, path.basename(filePath));
+        await settle(sent, sent ? null : "file_unavailable");
+        return sent ? undefined : response.status(404).json({ message: "Video file unavailable." });
+      }
       return response.sendFile(path.basename(filePath), {
         root: uploadDirectory, dotfiles: "deny", acceptRanges: false, cacheControl: false, lastModified: false,
       }, (error) => {

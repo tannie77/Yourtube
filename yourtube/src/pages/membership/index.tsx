@@ -340,7 +340,7 @@ export default function MembershipPage() {
                 A plan for every <span className="text-[#ffb39f]">way to watch.</span>
               </h1>
               <p className="workspace-hero-copy max-w-[510px]">
-                Compare memberships, then use {catalogue?.razorpayTestConfigured ? "Razorpay Test checkout or the local simulation" : "the local simulation"}. No real money is charged.
+                Compare memberships. {catalogue?.razorpayTestConfigured ? "Razorpay Test checkout is available; no real money is charged." : catalogue?.localSimulationAvailable ? "Local test checkout is available; no real money is charged." : "Checkout will be available after Razorpay Test is configured."}
               </p>
               <div className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-xs font-medium text-[#d9deea]">
                 <span className="inline-flex items-center gap-2"><ShieldCheck className="size-4 text-[#ffad97]" aria-hidden="true" /> No real payments</span>
@@ -415,7 +415,7 @@ export default function MembershipPage() {
                         <span className="text-[32px] font-semibold tracking-[-0.065em]">{formatRupees(plan.pricesPaise[billingCycle])}</span>
                         <span className="text-xs text-[#8a93a2] dark:text-[#aab5c8]">{plan.id === "free" ? "forever" : billingCycle === "monthly" ? "/mo" : billingCycle === "quarterly" ? "/quarter" : "/year"}</span>
                       </div>
-                      <p className="mt-1 text-xs text-[#8a93a2] dark:text-[#aab5c8]">{plan.id === "free" ? "Always available" : `${activeCycle?.validityDays} days of access${catalogue.razorpayTestConfigured ? " · test renewal available" : " · one-time local term"}`}</p>
+                      <p className="mt-1 text-xs text-[#8a93a2] dark:text-[#aab5c8]">{plan.id === "free" ? "Always available" : `${activeCycle?.validityDays} days of access${catalogue.razorpayTestConfigured ? " · test renewal available" : catalogue.localSimulationAvailable ? " · one-time local term" : " · checkout pending"}`}</p>
                       <div className="my-6 h-px bg-[#edf0f4] dark:bg-[#263149]" />
                       <ul className="flex-1 space-y-3.5 text-sm text-[#586579] dark:text-[#e6ecf7]">
                         <li className="flex gap-2.5"><Check className="mt-0.5 size-4 shrink-0 text-[#df705a] dark:text-[#ff9b87]" aria-hidden="true" /> Up to {plan.features.maxQuality} video</li>
@@ -428,7 +428,7 @@ export default function MembershipPage() {
                       ) : subscription.scheduledChange || subscription.pendingProviderChange ? (
                         <div className="mt-8 flex h-11 items-center justify-center rounded-xl border border-dashed border-[#d8dde5] dark:border-[#3b465f] bg-[#f8f9fb] dark:bg-[#263149] text-sm font-semibold text-[#7e899b] dark:text-[#aab5c8]">Change already scheduled</div>
                       ) : (
-                        <button type="button" className="yt-primary-button mt-8 flex h-11 items-center justify-center gap-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--yt-red)]" onClick={() => choosePlan(plan.id as PaidPlanId, billingCycle)}>
+                        <button type="button" disabled={!catalogue.razorpayTestConfigured && !catalogue.localSimulationAvailable} className="yt-primary-button mt-8 flex h-11 items-center justify-center gap-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--yt-red)] disabled:cursor-not-allowed disabled:opacity-50" onClick={() => choosePlan(plan.id as PaidPlanId, billingCycle)}>
                           {subscription.status !== "active" ? "Choose plan" : subscription.paymentProvider === "razorpay" ? "Change recurring plan" : isCurrent ? "Renew plan" : catalogue.plans.findIndex((item) => item.id === plan.id) > currentRank ? "Upgrade plan" : "Schedule downgrade"} <ArrowRight className="size-4" aria-hidden="true" />
                         </button>
                       )}
@@ -468,7 +468,7 @@ export default function MembershipPage() {
                     <h2 id="checkout-heading" className="text-2xl font-semibold tracking-[-0.05em]">Test checkout</h2>
                   </div>
                 </div>
-                <p className="mt-5 text-sm leading-6 text-[#6e798b] dark:text-[#aab5c8]">{subscription.paymentProvider === "razorpay" && subscription.status === "active" ? "Change the recurring plan. New benefits begin after Razorpay confirms the charge." : catalogue.razorpayTestConfigured ? "Choose Razorpay Test for recurring billing, or try the local simulation." : "Use a server-priced local test order. Choose a simulated result; no payment provider is contacted."}</p>
+                <p className="mt-5 text-sm leading-6 text-[#6e798b] dark:text-[#aab5c8]">{subscription.paymentProvider === "razorpay" && subscription.status === "active" ? "Change the recurring plan. New benefits begin after Razorpay confirms the charge." : catalogue.razorpayTestConfigured ? catalogue.localSimulationAvailable ? "Choose Razorpay Test for recurring billing, or try the local simulation." : "Choose Razorpay Test for recurring billing." : catalogue.localSimulationAvailable ? "Use a server-priced local test order. Choose a simulated result; no payment provider is contacted." : "Razorpay Test checkout is being configured. Paid plans cannot be selected yet."}</p>
                 {selection && selectedPlan ? (
                   <div className="mt-6 rounded-2xl border border-[#e9ecf1] dark:border-[#3b465f] bg-[#fafbfc] dark:bg-[#263149] p-5">
                     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -485,9 +485,9 @@ export default function MembershipPage() {
                     ) : !checkoutOrder ? (
                       <div className="mt-5 flex flex-wrap gap-2">
                       {catalogue.razorpayTestConfigured && subscription.status !== "active" && <button type="button" disabled={checkoutBusy} className="yt-primary-button min-h-11" onClick={() => void beginRazorpay()}>{checkoutBusy ? "Opening…" : "Open Razorpay Test"}</button>}
-                      <button type="button" disabled={checkoutBusy || Boolean(subscription.scheduledChange)} className="yt-primary-button mt-5 min-h-11 disabled:cursor-not-allowed" onClick={beginCheckout}>
+                      {catalogue.localSimulationAvailable && <button type="button" disabled={checkoutBusy || Boolean(subscription.scheduledChange)} className="yt-primary-button mt-5 min-h-11 disabled:cursor-not-allowed" onClick={beginCheckout}>
                         {checkoutBusy ? "Creating order…" : "Create local test order"} <ArrowRight className="size-4" aria-hidden="true" />
-                      </button>
+                      </button>}
                       </div>
                     ) : (
                       <div className="mt-5 border-t border-[#e6e9ee] dark:border-[#3b465f] pt-5">
@@ -495,7 +495,7 @@ export default function MembershipPage() {
                           <span className={`${styles.statusBadge} ${styles[`status${checkoutOrder.status}`]}`}>{checkoutOrder.status}</span>
                           <span className="text-xs text-[#8993a2] dark:text-[#aab5c8]">Order {checkoutOrder.orderId.slice(-8).toUpperCase()}</span>
                         </div>
-                        {checkoutOrder.status === "pending" && !checkoutOrder.simulatedResult && (
+                        {catalogue.localSimulationAvailable && checkoutOrder.status === "pending" && !checkoutOrder.simulatedResult && (
                           <div className="mt-4 flex flex-wrap gap-2.5" aria-label="Choose local payment outcome">
                             {outcomeButtons.map(({ outcome, label, icon: Icon }) => (
                               <button key={outcome} type="button" disabled={checkoutBusy} className={`${styles.outcomeButton} ${outcome === "success" ? styles.successButton : ""}`} onClick={() => simulateCheckout(outcome)}>
@@ -504,7 +504,7 @@ export default function MembershipPage() {
                             ))}
                           </div>
                         )}
-                        {(checkoutOrder.status === "pending" || checkoutOrder.status === "processing") && checkoutOrder.simulatedResult && (
+                        {catalogue.localSimulationAvailable && (checkoutOrder.status === "pending" || checkoutOrder.status === "processing") && checkoutOrder.simulatedResult && (
                           <div className="mt-4">
                             <p className="text-sm text-[#657186] dark:text-[#aab5c8]">A {checkoutOrder.simulatedResult.outcome} result was issued. Verify the same result to finish this order.</p>
                             <button type="button" disabled={checkoutBusy} className="yt-primary-button mt-3 min-h-11" onClick={retryVerification}>
@@ -559,7 +559,7 @@ export default function MembershipPage() {
                           {order.status === "paid" && <button type="button" className="text-xs font-semibold text-[#d8614c] dark:text-[#ff9b87] hover:underline" onClick={() => viewReceipt(order)}>View test receipt</button>}
                         </div>
                         {order.invoiceNumber && <p className="mt-2 text-xs text-[#8590a0] dark:text-[#aab5c8]">Reference: {order.invoiceNumber}</p>}
-                        {order.status === "paid" && <a className="mt-1 inline-block text-xs font-semibold text-[#d8614c] dark:text-[#ff9b87] hover:underline" href={`${axiosInstance.defaults.baseURL || "http://127.0.0.1:5000"}/subscriptions/orders/${order.orderId}/invoice`} target="_blank" rel="noopener noreferrer">Open test invoice</a>}
+                        {order.status === "paid" && <a className="mt-1 inline-block text-xs font-semibold text-[#d8614c] dark:text-[#ff9b87] hover:underline" href={`${axiosInstance.defaults.baseURL || (process.env.NODE_ENV === "production" ? "" : "http://127.0.0.1:5000")}/subscriptions/orders/${order.orderId}/invoice`} target="_blank" rel="noopener noreferrer">Open test invoice</a>}
                         {order.status === "paid" && <p className="mt-1 text-xs text-[#8590a0] dark:text-[#aab5c8]">Email: {order.receiptStatus === "sent" ? "sent" : "awaiting delivery"}</p>}
                       </li>
                     ))}

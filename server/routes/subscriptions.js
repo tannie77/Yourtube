@@ -13,8 +13,9 @@ routes.get("/plans", (_request, response) => {
     plans,
     billingCycles,
     currency: "INR",
-    pricingNote: razorpayConfigured() ? "Razorpay Test mode is available. Test payments do not move real money." : "Illustrative local test prices. Configure Razorpay Test credentials to enable provider checkout.",
+    pricingNote: razorpayConfigured() ? "Razorpay Test mode is available. Test payments do not move real money." : process.env.NODE_ENV === "production" ? "Illustrative prices. Razorpay Test checkout is pending configuration." : "Illustrative local test prices. Configure Razorpay Test credentials to enable provider checkout.",
     razorpayTestConfigured: razorpayConfigured(),
+    localSimulationAvailable: process.env.NODE_ENV !== "production",
     razorpayKeyId: razorpayConfigured() ? process.env.RAZORPAY_TEST_KEY_ID : null,
   });
 });

@@ -33,7 +33,7 @@ type DownloadUsage = {
   monthlyRemaining: number;
 };
 
-const apiBase = axiosInstance.defaults.baseURL || "http://127.0.0.1:5000";
+const apiBase = axiosInstance.defaults.baseURL || (process.env.NODE_ENV === "production" ? "" : "http://127.0.0.1:5000");
 
 function dateLabel(value: string) {
   return new Intl.DateTimeFormat("en-IN", {

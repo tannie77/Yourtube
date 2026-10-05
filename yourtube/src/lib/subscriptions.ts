@@ -24,6 +24,7 @@ export type PlanCatalogue = {
   currency: "INR";
   pricingNote: string;
   razorpayTestConfigured: boolean;
+  localSimulationAvailable: boolean;
   razorpayKeyId: string | null;
 };
 
